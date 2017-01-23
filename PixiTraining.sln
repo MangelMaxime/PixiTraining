@@ -5,6 +5,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60BC93-E09B-4E5F-9D85-95A519479D54}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
 		build.js = build.js
 		package.json = package.json
 		README.md = README.md
@@ -13,7 +15,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PixiTraining", "src\PixiTraining\PixiTraining.fsproj", "{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Server", "src\Server\Server.fsproj", "{12593127-7204-478F-9A66-90D8FF896153}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Launcher", "src\Launcher\Launcher.fsproj", "{7380BC35-7406-44F9-9183-50CB2AF2F7BD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "baseApp", "baseApp", "{A13FF7F5-FA64-44CD-B384-E9DD61CF0065}"
+	ProjectSection(SolutionItems) = preProject
+		baseApp\index.html = baseApp\index.html
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,10 +32,10 @@ Global
 		{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12593127-7204-478F-9A66-90D8FF896153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12593127-7204-478F-9A66-90D8FF896153}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12593127-7204-478F-9A66-90D8FF896153}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12593127-7204-478F-9A66-90D8FF896153}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
