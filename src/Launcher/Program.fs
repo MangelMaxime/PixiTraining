@@ -7,7 +7,6 @@ open Fable.Import.Electron
 
 module Program =
 
-
   // Keep a global reference of the window object, if you don't, the window will
   // be closed automatically when the JavaScript object is garbage collected.
   let mutable mainWindow: BrowserWindow option = Option.None
@@ -41,8 +40,14 @@ module Program =
     window.maximize()
     mainWindow <- Some window
 
+  let mutable server = Unchecked.defaultof<Node.http_types.Server>
+
   // Create the main window when electron app is ready
-  electron.app.on_ready(unbox createMainWindow) |> ignore
+  electron.app.on_ready(unbox (fun _ ->
+    createMainWindow ()
+    server <- Server.createServer()
+    server.listen(8888)
+  )) |> ignore
 
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q

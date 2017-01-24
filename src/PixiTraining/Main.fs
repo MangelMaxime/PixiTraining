@@ -53,12 +53,59 @@ module Main =
     | Play
     | MainTitle
 
+
+  type TileDef =
+    { Name: string
+      X: float
+      Y: float
+      Width: float
+      Height: float
+    }
+
+    member self.ToRectangle () =
+      Rectangle(self.X, self.Y, self.Width, self.Height)
+
+  type SpriteSheet =
+    { Name: string
+      Tiles: Map<string, Sprite>
+    }
+
+  let createSpriteSheet (res: loaders.ResourceDictionary) name (tilesDef: TileDef list) =
+    let rec createTiles (res: loaders.ResourceDictionary) (tilesDef: TileDef list) (tiles: Map<string, Sprite>) =
+      match tilesDef with
+      | x::xs ->
+          let texture = (res.Item(name).texture)
+          texture.frame <- x.ToRectangle()
+          createTiles res xs (tiles.Add(x.Name, Sprite(texture)))
+      | [] -> tiles
+
+    { Name = name
+      Tiles = createTiles res tilesDef Map.empty
+    }
+
+
+  let Grass1 =
+    { Name = "Grass1"
+      X = 0.
+      Y = 0.
+      Width = 64.
+      Height = 64.
+    }
+
+  let Grass2 =
+    { Name = "Grass2"
+      X = 74.
+      Y = 0.
+      Width = 64.
+      Height = 64.
+    }
+
   module Behaviors =
     let moveable = ()
 
   open Behaviors
 
-  let updateLoop (RendererOptions: WebGLRenderer) (stage:Container) =
+  let updateLoop (renderer: WebGLRenderer) (stage:Container) =
 
     let fps = 60.
     let mutable state : State = Loading
@@ -66,14 +113,27 @@ module Main =
     let mutable resources  = Unchecked.defaultof<loaders.ResourceDictionary>
     let mutable sprites = []
 
+    let mutable tilesSheet = Unchecked.defaultof<SpriteSheet>
+
+    let testContainer = Container()
+
+    let bindContainer (c:DisplayObject) = stage.addChild c |> ignore
+
+    [ testContainer ]
+    |> Seq.iter(bindContainer)
 
     let nextId () =
       id <- id + 1
       sprintf "%i" id
+    let makeSprite t =
+      Sprite t
     let makeESprite (behaviors: Behavior list) (t: Texture) =
       new ESprite(t, nextId(), behaviors)
     let getTexture name =
       resources.Item(name).texture
+    let addToContainer (c: Container) (s: Sprite) =
+      c.addChild s |> ignore
+      s
     let setPosition x y (s: Sprite) =
       s.position <- Point(x, y)
       s
@@ -95,7 +155,7 @@ module Main =
           Browser.console.log "cojujio"
 
           let onLoadComplete r =
-            resources <- unbox<loaders.ResourceDictionary> r
+            resources <- unbox<loaders.ResourceDictionary>r
             Browser.console.log "onLoadCompelte"
             state <- MainTitle
 
@@ -109,10 +169,8 @@ module Main =
             Globals.loader.add(ressourceName, "assets/" + rawName)
             |> ignore
 
-
-          [ "player/player_02"
+          [ "sprites.json"
           ]
-          |> Seq.map(sprintf "%s.png")
           |> Seq.iter(addAssetToLoad)
 
           Globals.loader?on("error", errorCallback) |> ignore
@@ -121,7 +179,16 @@ module Main =
           Globals.loader?once("complete", fun loader resources -> onLoadComplete resources) |> ignore
           Nothing
         | MainTitle ->
-            Browser.console.log "MainTitle reached"
+
+//            tilesSheet.Tiles.Item("Grass1")
+//            |> addToContainer testContainer
+//            |> ignore
+//
+//            tilesSheet.Tiles.Item("Grass2")
+//            |> setPosition 100. 100.
+//            |> addToContainer testContainer
+//            |> ignore
+
             Nothing
 
     let rec updateLoop render (dt: float) =
@@ -147,7 +214,7 @@ module Main =
 
   let start divName =
     let options =
-      [ BackgroundColor (float 0x1099bb)
+      [ BackgroundColor (float 0x9999bb)
         Resolution 1.
         Antialias true
       ]
