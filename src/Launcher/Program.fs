@@ -19,12 +19,12 @@ module Program =
     let window = electron.BrowserWindow.Create(options)
 
     let sourceDirectory = Node.path.join(Node.__dirname, "js")
-    let entryFile = Node.path.join(Node.__dirname, "index.html")
+    let entryFile = "localhost:8888/index.html"
 
     // Load the index.html of the app
     let opts = createEmpty<Node.url_types.UrlOptions>
     opts.pathname <- Some entryFile
-    opts.protocol <- Some "file:"
+    opts.protocol <- Some "http:"
     window.loadURL(Node.url.format(opts))
 
     Node.fs.watch(sourceDirectory, fun _ ->
