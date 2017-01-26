@@ -60,6 +60,8 @@
   -->
   <ItemGroup>
     <Compile Include="Fable.Import.Pixi.fs" />
+    <Compile Include="Inputs.fs" />
+    <Compile Include="Helpers.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>

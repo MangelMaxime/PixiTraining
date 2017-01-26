@@ -149,7 +149,6 @@ module PIXI =
         [<Emit("$0.on('mouseout',$1...)")>] member __.on_mouseout(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         [<Emit("$0.on('mouseover',$1...)")>] member __.on_mouseover(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         [<Emit("$0.on('mouseup',$1...)")>] member __.on_mouseup(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
-        [<Emit("$0.on('mouseclick',$1...)")>] member __.on_mouseclick(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         [<Emit("$0.on('mouseupoutside',$1...)")>] member __.on_mouseupoutside(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         [<Emit("$0.on('rightclick',$1...)")>] member __.on_rightclick(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         [<Emit("$0.on('rightdown',$1...)")>] member __.on_rightdown(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
@@ -354,12 +353,12 @@ module PIXI =
 
     and [<KeyValueList>]
         ParticleContainerProperties =
-        | Scale of bool 
+        | Scale of bool
         | Position of bool
-        | Rotation of bool 
+        | Rotation of bool
         | Uvs of bool
         | Alpha of bool
-        
+
     and [<Import("ParticleContainer","PIXI")>] ParticleContainer(?size: float, ?properties: ParticleContainerProperties list, ?batchSize: float) =
         inherit Container()
         member __._maxSize with get(): float = failwith "JS only" and set(v: float): unit = failwith "JS only"
@@ -694,7 +693,7 @@ module PIXI =
         member __.start(): unit = failwith "JS only"
         member __.destroy(): unit = failwith "JS only"
 
-    and [<KeyValueList>] 
+    and [<KeyValueList>]
         TextStyle =
         | Font of string
         | Fill of U2<string,float>
@@ -703,16 +702,16 @@ module PIXI =
         | StrokeThickness of float
         | WordWrap of bool
         | WordWrapWidth of float
-        | LineHeight of float 
-        | DropShadow of bool 
-        | DropShadowColor of U2<string, float> 
-        | DropShadowAngle of float 
-        | DropShadowDistance of float 
-        | Padding of float 
-        | TextBaseline of string 
-        | LineJoin of string 
-        | MiterLimit of float 
-        
+        | LineHeight of float
+        | DropShadow of bool
+        | DropShadowColor of U2<string, float>
+        | DropShadowAngle of float
+        | DropShadowDistance of float
+        | Padding of float
+        | TextBaseline of string
+        | LineJoin of string
+        | MiterLimit of float
+
     and [<Import("Text","PIXI")>] Text(?text: string, ?style: TextStyle list, ?resolution: float) =
         inherit Sprite()
         member __.fontPropertiesCache with get(): obj = failwith "JS only" and set(v: obj): unit = failwith "JS only"
@@ -883,8 +882,8 @@ module PIXI =
         [<KeyValueList>]
         type BitmapTextStyle =
             | Font of U2<string, obj>
-            | Align of string 
-            | Tint of float 
+            | Align of string
+            | Tint of float
 
         and [<Import("extras.BitmapText","PIXI")>] BitmapText(text: string, ?style: BitmapTextStyle list) =
             inherit Container()

@@ -42,10 +42,10 @@ module Server =
           | Some code ->
               match code with
               | "ENOENT" ->
-                  response.writeHead(404., null)
+                  response.writeHead(404., ?headers=None)
                   response.``end``()
               | _ ->
-                  response.writeHead(500., null)
+                  response.writeHead(500., ?headers=None)
                   let msg =
                     sprintf "Sorry, something went wrong.\n Error code is: %s" code
                   response.``end``(msg, "utf-8")

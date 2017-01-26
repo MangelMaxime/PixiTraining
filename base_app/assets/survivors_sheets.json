@@ -1,0 +1,40 @@
+{
+"frames": {
+	"survivor1_gun.png": {
+		"frame": {"x":0, "y":88, "w":51, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":51,"h":43},
+		"sourceSize": {"w":51,"h":43}
+	},
+	"survivor1_hold.png": {
+		"frame": {"x":57, "y":0, "w":37, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":37,"h":43},
+		"sourceSize": {"w":37,"h":43}
+	},
+	"survivor1_machine.png": {
+		"frame": {"x":0, "y":44, "w":51, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":51,"h":43},
+		"sourceSize": {"w":51,"h":43}
+	},
+	"survivor1_reload.png": {
+		"frame": {"x":52, "y":44, "w":41, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":41,"h":43},
+		"sourceSize": {"w":41,"h":43}
+	},
+	"survivor1_silencer.png": {
+		"frame": {"x":0, "y":0, "w":56, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":56,"h":43},
+		"sourceSize": {"w":56,"h":43}
+	},
+	"survivor1_stand.png": {
+		"frame": {"x":52, "y":88, "w":35, "h":43},
+		"spriteSourceSize": {"x":0,"y":0,"w":35,"h":43},
+		"sourceSize": {"w":35,"h":43}
+	}
+
+},
+"meta": {
+	"image": "survivors_sheets.png",
+	"size": {"w": 95, "h": 132},
+	"scale": "1"
+}
+}

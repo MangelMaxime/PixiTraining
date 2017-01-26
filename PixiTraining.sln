@@ -20,6 +20,26 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "baseApp", "baseApp", "{A13FF7F5-FA64-44CD-B384-E9DD61CF0065}"
 	ProjectSection(SolutionItems) = preProject
 		baseApp\index.html = baseApp\index.html
+		base_app\package.json = base_app\package.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "css", "css", "{9CDE6EBD-AAF6-4186-A19F-3BF62F206E12}"
+	ProjectSection(SolutionItems) = preProject
+		base_app\css\style.css = base_app\css\style.css
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{CAE38565-3FFB-49FB-A4FE-F019F496109D}"
+	ProjectSection(SolutionItems) = preProject
+		base_app\assets\sprites.json = base_app\assets\sprites.json
+		base_app\assets\sprites.png = base_app\assets\sprites.png
+		base_app\assets\survivors_sheets.json = base_app\assets\survivors_sheets.json
+		base_app\assets\survivors_sheets.png = base_app\assets\survivors_sheets.png
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{8DD102BE-C984-431D-B591-8DA5194930C0}"
+	ProjectSection(SolutionItems) = preProject
+		base_app\libs\pixi.min.js = base_app\libs\pixi.min.js
+		base_app\libs\pixi.min.js.map = base_app\libs\pixi.min.js.map
 	EndProjectSection
 EndProject
 Global
@@ -39,5 +59,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9CDE6EBD-AAF6-4186-A19F-3BF62F206E12} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
+		{CAE38565-3FFB-49FB-A4FE-F019F496109D} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
+		{8DD102BE-C984-431D-B591-8DA5194930C0} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
 	EndGlobalSection
 EndGlobal
