@@ -9,7 +9,7 @@ open System
 [<AutoOpen>]
 module Helpers =
 
-  type Behavior = Func<ESprite, float, JS.Promise<bool>>
+  type Behavior = Func<ESprite, float, bool>
 
   and ESprite(t: Texture, id: string, behaviors: Behavior list) =
     inherit Sprite(t)
@@ -24,7 +24,6 @@ module Helpers =
       _behaviors <- b :: _behaviors
 
     member self.Update(dt: float) =
-      promise {
         let behaviors = _behaviors
         _behaviors <- []
         let mutable notCompletedBehaviors = []
@@ -33,11 +32,10 @@ module Helpers =
           _prevTime <- dt
           if tmp = 0. then 0. else dt - tmp
         for b in behaviors do
-          let! complete = b.Invoke(self, dt)
+          let complete = b.Invoke(self, dt)
           if not complete then
             notCompletedBehaviors <- b :: notCompletedBehaviors
         _behaviors <- _behaviors @ notCompletedBehaviors
-      }
 
     interface IDisposable with
       member self.Dispose() =
@@ -77,3 +75,33 @@ module Helpers =
 
   let degreesToRad degrees =
     degrees * Math.PI / 180.
+
+  let createText txt : PIXI.Text =
+    Text(txt)
+
+  let setAnchor x y (s: Sprite) =
+    s.anchor <- Point(x, y)
+    s
+
+  type Vector (?x, ?y) =
+    let x = defaultArg x 0.
+    let y = defaultArg y 0.
+
+    member self.X
+      with get () = x
+
+    member self.Y
+      with get () = y
+
+    member self.Normalize() =
+      let length = Math.Sqrt(self.X * self.X + self.Y * self.Y)
+      new Vector(self.X / length, self.Y / length)
+
+    static member (+) (a: Vector, b: Vector) =
+      new Vector(a.X + b.X, a.Y + b.Y)
+
+    static member (-) (a: Vector, b: Vector) =
+      new Vector(a.X - b.X, a.Y - b.Y)
+
+    static member (*) (s, a: Vector) =
+      new Vector(s * a.X, s * a.Y)

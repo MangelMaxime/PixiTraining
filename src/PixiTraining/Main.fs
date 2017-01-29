@@ -11,69 +11,144 @@ open System
 
 module Main =
 
+  type BasicSceneDU
+    = Init
+    | Run
+    | Pause
+
   type Scene
-    = Level1
+    = Level1 of BasicSceneDU
 
+  type LoadingDU
+    = Init
+    | Waiting
 
-  type Actions
+  type State
     = Nothing
-    | Loading
-    | RunScene of Scene
-    | RessourcesLoaded of loaders.ResourceDictionary
-
-  module Behaviors =
-    let moveable = ()
-
-  open Behaviors
+    | Loading of LoadingDU
+    | Scene of Scene
+    | SplashScreen of BasicSceneDU
 
   type GameState =
-    { Fps: float
+    { Renderer: WebGLRenderer
       Id: int
-      Resources: loaders.ResourceDictionary
       SpriteSheets: Map<string, ResizeArray<Texture>>
-      Sprites: ESprite list
-      Renderer: WebGLRenderer
-      Stage: Container
-      MouseState: Inputs.MouseState
+      State: State
+      Root: Container
+      MouseState: Inputs.Mouse.MouseState
+      KeyboardState: Inputs.Keyboard.KeyboardState
+      Data: obj
+      Resources: loaders.ResourceDictionary
+      DeltaTime: float
+      PreviousTime: float
+      Bounds: Rectangle
     }
 
-    static member Initial (renderer: WebGLRenderer) =
-      let stage = new Container()
+    [<PassGenerics>]
+    member self.GetData<'T>() =
+      unbox<'T>  self.Data
 
-      { Fps = 60.
-        Id = -1
-        Resources = Unchecked.defaultof<loaders.ResourceDictionary>
-        SpriteSheets = Map.empty
-        Sprites = []
-        Renderer = renderer
-        Stage = stage
-        MouseState = Inputs.initMouse stage
+    member self.ClearStage() =
+      self.Root.removeChildren() |> ignore
+      self
+
+    member self.Render() =
+      self.Renderer.render(self.Root)
+      self.KeyboardState.ClearLastKey()
+
+    member self.GetCenterX () =
+      self.Renderer.width / 2.
+
+    member self.GetCenterY () =
+      self.Renderer.height / 2.
+
+    member self.Survivors
+      with get () = self.SpriteSheets.[Survivors.SPRITES_SHEETS_KEY]
+
+    member self.Tiles
+      with get () = self.SpriteSheets.[Tiles.SPRITES_SHEETS_KEY]
+
+  type SplashScreenState =
+    { StartTime: DateTime
+    }
+
+  let CONTAINER_GROUND = "ground"
+
+  type PlayerState =
+    { Sprite: ESprite
+      FireDelay: TimeSpan
+      LastShootTime: DateTime
+    }
+
+    member self.X
+      with get () = self.Sprite.x
+      and set (value) = self.Sprite.x <- value
+
+    member self.Y
+      with get () = self.Sprite.y
+      and set (value) = self.Sprite.y <- value
+
+    static member Create (sprite, ?delay) =
+      { Sprite = sprite
+        FireDelay = TimeSpan.FromMilliseconds(defaultArg delay 150.)
+        LastShootTime = DateTime.Now
       }
 
-  let initialGameState = GameState.Initial
+  type Bullets =
+    { Direction: Vector
+      Damage: float
+      Sprite: Sprite
+    }
 
-  let updateLoop2 (gameState: GameState) action =
-      match action with
-      | Nothing ->
-          gameState, []
-      | RessourcesLoaded resources ->
-          let spriteSheets =
-            gameState.SpriteSheets
-              .Add("sprites", resources.Item("sprites").textures)
-              .Add("survivors_sheets", resources.Item("survivors_sheets").textures)
-          { gameState with
-              SpriteSheets = spriteSheets }, []
-      | Run ->
-          let message =
-            [ fun h ->
+    member self.__X
+      with get () = self.Sprite.x
+      and set (value) = self.Sprite.x <- value
+
+    member self.__Y
+      with get () = self.Sprite.y
+      and set (value) = self.Sprite.y <- value
+
+  type StateLevel1 =
+    { BulletsContainer: Container
+      EntitiesContainer: Container
+      Bullets: Bullets list
+      Player: PlayerState
+    }
+
+  let kickGame (initialState: GameState) =
+    let mutable state = initialState
+
+    let rec gameLoop (gameState: GameState) (dt: float) =
+
+      let gameState =
+        { gameState with
+            PreviousTime = dt
+            DeltaTime = if dt = 0. then 0. else dt - gameState.PreviousTime
+        }
+
+      let newState =
+        match gameState.State with
+        | Nothing -> gameState
+        | Loading subState ->
+            match subState with
+            | LoadingDU.Init ->
+                let state' = gameState.ClearStage()
+
+                let onError (e) = Browser.console.error e
+                let onProgress (e) = Browser.console.log e?progress
+
                 let onLoadComplete r =
                   let resources = unbox<loaders.ResourceDictionary> r
 
-                  Browser.console.log "onLoadCompelte"
-
-
-                let errorCallback e = Browser.console.error e
-                let onProgress e = Browser.console.log e?progress
+                  state <-
+                    { state with
+                        Resources = resources
+                        State = Scene (Level1 BasicSceneDU.Init)
+                        SpriteSheets =
+                          state.SpriteSheets
+                            .Add(Tiles.SPRITES_SHEETS_KEY, resources.Item("tiles_sheets").textures)
+                            .Add(Survivors.SPRITES_SHEETS_KEY, resources.Item("survivors_sheets").textures)
+                    }
 
                 let addAssetToLoad (rawName: string) =
                   let ressourceName =
@@ -82,134 +157,158 @@ module Main =
                   Globals.loader.add(ressourceName, "assets/" + rawName)
                   |> ignore
 
-                [ "sprites.json"
+                [ "tiles_sheets.json"
                   "survivors_sheets.json"
                 ]
                 |> Seq.iter(addAssetToLoad)
 
-                Globals.loader?on("error", errorCallback) |> ignore
+                Globals.loader?on("error", onError) |> ignore
                 Globals.loader.load() |> ignore
                 Globals.loader?on("progress", onProgress) |> ignore
                 Globals.loader?once("complete", fun _ resources -> onLoadComplete resources) |> ignore
-            ]
 
-          gameState, []
+                { state' with State = Loading Waiting }
+
+            | Waiting -> gameState
+        | Scene subScene ->
+            match subScene with
+            | Level1 sceneDU ->
+                match sceneDU with
+                | BasicSceneDU.Init ->
+                    let state' = gameState.ClearStage()
+
+                    let entitiesContainer = new Container()
+
+                    let player =
+                      state.Survivors?(Survivors.SPRITE_GUN)
+                      |> unbox<Texture>
+                      |> makeESprite [] "player"
+                      |> setPosition 100. 100.
+                      |> addToContainer entitiesContainer
+
+                    createText("Level 1")
+                    |> setPosition (state'.GetCenterX()) 50.
+                    |> setAnchor 0.5 0.5
+                    |> (fun x -> state'.Root.addChild(x))
+                    |> ignore
+
+                    let data =
+                      { BulletsContainer = new Container()
+                        EntitiesContainer = entitiesContainer
+                        Bullets = []
+                        Player = PlayerState.Create(player :?> ESprite)
+                      }
+
+                    [ data.BulletsContainer
+                      data.EntitiesContainer
+                    ]
+                    |> (fun x -> state'.Root.addChild(unbox x))
+                    |> ignore
+
+                    { state' with
+                        State = Scene (Level1 Run)
+                        Data = data }
+                | Run ->
+                    // Add here the game logic
+                    // Example: Player movement
+                    let data = gameState.GetData<StateLevel1>()
+                    let now = DateTime.Now
+
+                    let moveBullets (data: StateLevel1) =
+                      for bullet in data.Bullets do
+                        bullet.__X <- bullet.__X + 0.8 * gameState.DeltaTime
+                      data
+
+                    let isSpriteOffScreen (bounds: Rectangle) (sprite: Sprite) =
+                      let sx = sprite.position.x
+                      let sy = sprite.position.y
+
+                      (sx + sprite.width) < bounds.x
+                        || (sy + sprite.height) < bounds.y
+                        || (sprite.y - sprite.height) >= bounds.height
+                        || (sx - sprite.width) > bounds.width
+
+                    let killBulletsOffScreen (bounds: Rectangle) (data: StateLevel1) =
+                      let liveBullets =
+                        data.Bullets
+                        |> List.filter(fun x ->
+                          not (isSpriteOffScreen bounds x.Sprite)
+                        )
+                      { data with Bullets = liveBullets }
+
+                    let createBullet originX originY mousePosition =
+
+                      gameState.Tiles?(Tiles.SPRITE_GUN_BULLET)
+                      |> unbox<Texture>
+                      |> makeSprite
+                      |> setPosition originX originY
+                      |> addToContainer data.BulletsContainer
+                      |> fun x ->
+                          { Direction = Vector(1., 1.)
+                            Damage = 1.
+                            Sprite = x
+                          }
+
+                    let playerInputsBullet (inputs: Inputs.Mouse.MouseState) (data: StateLevel1) =
+                      if gameState.MouseState.Left && (now - data.Player.LastShootTime) > data.Player.FireDelay then
+                        let originX = data.Player.X + 50.
+                        let originY = data.Player.Y + 29.
+                        let bullet = createBullet originX originY gameState.MouseState.Position
+                        { data with
+                            Bullets = bullet :: data.Bullets
+                            Player =
+                              { data.Player with
+                                  LastShootTime = now
+                              }
+                        }
+                      else
+                        data
+
+                    let stepBullets data =
+                      data
+                      |> moveBullets
+                      |> killBulletsOffScreen gameState.Bounds
+                      |> playerInputsBullet gameState.MouseState
+
+                    { gameState with
+                        Data = stepBullets data }
+                | Pause -> gameState
+
+        | SplashScreen sceneDU ->
+            let data = gameState.GetData<SplashScreenState>()
+
+            match sceneDU with
+            | BasicSceneDU.Init ->
+                let state' = gameState.ClearStage()
+                createText("Fable graphics")
+                |> setPosition (state'.GetCenterX()) (state'.GetCenterY())
+                |> setAnchor 0.5 0.5
+                |> (fun x -> state'.Root.addChild(x))
+                |> ignore
+                { state' with State = SplashScreen Run }
+            | Run ->
+                let elapsedTime = DateTime.Now - data.StartTime
+                if elapsedTime > TimeSpan.FromSeconds(1.) then
+                  { gameState with State = Loading LoadingDU.Init }
+                else
+                  gameState
+            | Pause -> gameState
 
 
-  type State =
-    | Nothing
-    | Loading
-    | Play
+      state <- newState
+      state.Render()
 
-  let updateLoop (renderer: WebGLRenderer) (stage:Container) =
+      Browser.window.requestAnimationFrame(fun dt ->
+        gameLoop state dt)
+      |> ignore
 
-    let fps = 60.
-    let mutable state : State = Loading
-    let mutable id = -1
-    let mutable resources = Unchecked.defaultof<loaders.ResourceDictionary>
-    let mutable resTiles = Unchecked.defaultof<ResizeArray<Texture>>
-    let mutable survivorSheet = Unchecked.defaultof<ResizeArray<Texture>>
-    let mutable sprites : ESprite list = []
+    gameLoop state 0.
 
-    let testContainer = Container()
+  let launchGame divName =
 
-    let bindContainer (c:DisplayObject) = stage.addChild c |> ignore
-    let stageMouseState = Inputs.initMouse stage
+    let width = 1024.
+    let height = 800.
 
-    [ testContainer ]
-    |> Seq.iter(bindContainer)
-
-    let nextId () =
-      id <- id + 1
-      sprintf "%i" id
-
-    let update (currentState: State) =
-
-      match currentState with
-      | Nothing -> State.Nothing
-      | Loading ->
-          let onLoadComplete r =
-            resources <- unbox<loaders.ResourceDictionary> r
-
-            resTiles <- resources.Item("sprites").textures
-            survivorSheet <- resources.Item("survivors_sheets").textures
-
-            Browser.console.log "onLoadCompelte"
-            state <- Play
-
-          let errorCallback e = Browser.console.error e
-          let onProgress e = Browser.console.log e?progress
-
-          let addAssetToLoad (rawName: string) =
-            let ressourceName =
-              let fileName = rawName.Substring(rawName.LastIndexOf('/') + 1)
-              fileName.Split('.').[0]
-            Globals.loader.add(ressourceName, "assets/" + rawName)
-            |> ignore
-
-          [ "sprites.json"
-            "survivors_sheets.json"
-          ]
-          |> Seq.iter(addAssetToLoad)
-
-          Globals.loader?on("error", errorCallback) |> ignore
-          Globals.loader.load() |> ignore
-          Globals.loader?on("progress", onProgress) |> ignore
-          Globals.loader?once("complete", fun _ resources -> onLoadComplete resources) |> ignore
-          Nothing
-        | Play ->
-            resTiles?("dirt_1.png")
-            |> unbox<Texture>
-            |> makeSprite
-            |> setPosition 100. 100.
-            |> addToContainer testContainer
-            |> ignore
-
-            resTiles?("grass_1.png")
-            |> unbox<Texture>
-            |> makeSprite
-            |> addToContainer testContainer
-            |> ignore
-
-            survivorSheet?("survivor1_gun.png")
-            |> unbox<Texture>
-            |> makeESprite [] (nextId())
-            |> centerPivot
-            |> setPosition 200. 200.
-            |> setRotation (degreesToRad 90.)
-            |> addToContainer testContainer
-            |> ignore
-
-            survivorSheet?("survivor1_gun.png")
-            |> unbox<Texture>
-            |> makeESprite [] (nextId())
-            |> centerPivot
-            |> setPosition 200. 200.
-            |> addToContainer testContainer
-            |> ignore
-
-            Nothing
-
-    let rec updateLoop render (dt: float) =
-      promise {
-        let mutable xs = []
-        for x in sprites do
-          do! x.Update(dt)
-          if not x.IsDisposed then xs <- x::xs
-        return xs
-      }
-      |> Promise.iter(fun sprites ->
-        state <- update(state)
-        render()
-        Browser.window.requestAnimationFrame(
-          fun dt ->
-            updateLoop render dt
-          ) |> ignore
-        )
-
-    updateLoop
-
-  let start divName =
     let options =
       [ BackgroundColor (float 0x9999bb)
         Resolution 1.
@@ -217,15 +316,42 @@ module Main =
       ]
 
     let renderer =
-      WebGLRenderer(Browser.window.innerWidth, Browser.window.innerHeight, options)
+      WebGLRenderer(width, height, options)
 
     Browser.document
       .getElementById(divName)
       .appendChild(renderer.view) |> ignore
 
+    // Make the canvas selectable
+    renderer.view.setAttribute("tabindex", "1")
+    renderer.view.focus()
+
+    // Attach a top click event to game focus on click
+    renderer.view.addEventListener_click(fun ev ->
+      renderer.view.focus()
+      null
+    )
+
     let stage = Container(interactive = true)
-    stage.hitArea <- Rectangle(0., 0., Browser.window.innerWidth, Browser.window.innerHeight)
+    stage.hitArea <- Rectangle(0., 0., width, height)
 
-    updateLoop renderer stage (fun () -> renderer.render(stage)) 0.
+    let state =
+      { Renderer = renderer
+        Id = -1
+        SpriteSheets = Map.empty
+        State = SplashScreen BasicSceneDU.Init
+        Root = stage
+        MouseState = Inputs.Mouse.init stage
+        KeyboardState = Inputs.Keyboard.init renderer.view
+        Data =
+          { StartTime = DateTime.Now
+          }
+        DeltaTime = 0.
+        PreviousTime = 0.
+        Resources = Unchecked.defaultof<loaders.ResourceDictionary>
+        Bounds = Rectangle(0., 0., width, height)
+      }
 
-  start "game"
+    kickGame state
+
+  launchGame "game"

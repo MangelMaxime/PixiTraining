@@ -41,7 +41,7 @@ const LauncherConfig = {
 
 const toDevConfig = (baseConfig) =>
   Object.assign({
-    //"sourceMaps": true,
+    "sourceMaps": true,
     "watch": true
   }, baseConfig)
 
