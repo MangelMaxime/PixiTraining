@@ -59,7 +59,6 @@
   </Target>
   -->
   <ItemGroup>
-    <Compile Include="Libs\Aether.fs" />
     <Compile Include="Libs\Fable.Import.Pixi.fs" />
     <Compile Include="SpriteSheetHelpers.fs" />
     <Compile Include="Inputs\Keyboard.fs" />

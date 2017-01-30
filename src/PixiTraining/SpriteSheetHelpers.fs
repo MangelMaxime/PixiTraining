@@ -13,29 +13,13 @@ open System
 module SpriteSheetHelpers =
 
   [<RequireQualifiedAccess>]
-  module Tiles =
+  module PlayerBlue =
 
-    let SPRITES_SHEETS_KEY = "tiles"
+    let SPRITES_SHEETS_KEY = "player_blue"
+    // Walks
+    let SPRITE_WALK_1 = "playerBlue_walk1.png"
+    let SPRITE_WALK_2 = "playerBlue_walk2.png"
+    let SPRITE_WALK_3 = "playerBlue_walk3.png"
+    let SPRITE_WALK_4 = "playerBlue_walk4.png"
+    let SPRITE_WALK_5 = "playerBlue_walk5.png"
 
-    let SPRITE_COUCH_MIDDLE = "couch.png"
-    let SPRITE_COUCH_LEFT = "couch_left.png"
-    let SPRITE_RIGHT = "couch_right.png"
-    let SPRITE_DIRT_1 = "dirt_1.png"
-    let SPRITE_DIRT_2 = "dirt_2.png"
-    let SPRITE_GRASS_1 = "grass_1.png"
-    let SPRITE_GRASS_2 = "grass_2.png"
-    let SPRITE_GRASS_3 = "grass_3.png"
-    let SPRITE_GRASS_4 = "grass_4.png"
-    let SPRITE_GUN_BULLET = "gun_bullet.png"
-
-  [<RequireQualifiedAccess>]
-  module Survivors =
-
-    let SPRITES_SHEETS_KEY = "survivors"
-
-    let SPRITE_GUN = "survivor1_gun.png"
-    let SPRITE_HOLD = "survivor1_hold.png"
-    let SPRITE_MACHINE = "survivor1_machine.png"
-    let SPRITE_RELOAD = "survivor1_reload.png"
-    let SPRITE_SILENCER = "survivor1_silencer.png"
-    let SPRITE_STAND = "survivor1_stand.png"

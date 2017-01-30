@@ -93,6 +93,9 @@ module Keyboard =
         Modifiers = Modifiers.Initial
       }
 
+    member self.IsPress key =
+      self.KeysPressed.Contains(key)
+
     member self.ClearLastKey () =
       self.LastKeyCode <- -1
       self.LastKeyValue <- ""

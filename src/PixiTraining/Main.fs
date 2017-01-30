@@ -7,6 +7,8 @@ open Fable.Import
 open Fable.Import.PIXI
 open Fable.PowerPack
 
+open PixiTraining.Inputs
+
 open System
 
 module Main =
@@ -62,11 +64,8 @@ module Main =
     member self.GetCenterY () =
       self.Renderer.height / 2.
 
-    member self.Survivors
-      with get () = self.SpriteSheets.[Survivors.SPRITES_SHEETS_KEY]
-
-    member self.Tiles
-      with get () = self.SpriteSheets.[Tiles.SPRITES_SHEETS_KEY]
+    member self.PlayerBlue
+      with get () = self.SpriteSheets.[PlayerBlue.SPRITES_SHEETS_KEY]
 
   type SplashScreenState =
     { StartTime: DateTime
@@ -75,9 +74,9 @@ module Main =
   let CONTAINER_GROUND = "ground"
 
   type PlayerState =
-    { Sprite: ESprite
-      FireDelay: TimeSpan
-      LastShootTime: DateTime
+    { Sprite: Sprite
+      Health: int
+      Speed: float
     }
 
     member self.X
@@ -88,30 +87,14 @@ module Main =
       with get () = self.Sprite.y
       and set (value) = self.Sprite.y <- value
 
-    static member Create (sprite, ?delay) =
+    static member Create (sprite) =
       { Sprite = sprite
-        FireDelay = TimeSpan.FromMilliseconds(defaultArg delay 150.)
-        LastShootTime = DateTime.Now
+        Health = 3
+        Speed = 0.5
       }
 
-  type Bullets =
-    { Direction: Vector
-      Damage: float
-      Sprite: Sprite
-    }
-
-    member self.__X
-      with get () = self.Sprite.x
-      and set (value) = self.Sprite.x <- value
-
-    member self.__Y
-      with get () = self.Sprite.y
-      and set (value) = self.Sprite.y <- value
-
   type StateLevel1 =
-    { BulletsContainer: Container
-      EntitiesContainer: Container
-      Bullets: Bullets list
+    { EntitiesContainer: Container
       Player: PlayerState
     }
 
@@ -146,8 +129,7 @@ module Main =
                         State = Scene (Level1 BasicSceneDU.Init)
                         SpriteSheets =
                           state.SpriteSheets
-                            .Add(Tiles.SPRITES_SHEETS_KEY, resources.Item("tiles_sheets").textures)
-                            .Add(Survivors.SPRITES_SHEETS_KEY, resources.Item("survivors_sheets").textures)
+                            .Add(PlayerBlue.SPRITES_SHEETS_KEY, resources.Item("player_blue").textures)
                     }
 
                 let addAssetToLoad (rawName: string) =
@@ -157,8 +139,7 @@ module Main =
                   Globals.loader.add(ressourceName, "assets/" + rawName)
                   |> ignore
 
-                [ "tiles_sheets.json"
-                  "survivors_sheets.json"
+                [ "player_blue.json"
                 ]
                 |> Seq.iter(addAssetToLoad)
 
@@ -180,28 +161,24 @@ module Main =
                     let entitiesContainer = new Container()
 
                     let player =
-                      state.Survivors?(Survivors.SPRITE_GUN)
+                      state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
                       |> unbox<Texture>
-                      |> makeESprite [] "player"
-                      |> setPosition 100. 100.
-                      |> setAnchor 0.5 0.5
-                      |> addToContainer entitiesContainer
+                      |> makeSprite
 
                     createText("Level 1")
-                    |> setPosition (state'.GetCenterX()) 50.
                     |> setAnchor 0.5 0.5
+                    |> setPosition (state'.GetCenterX()) 50.
                     |> (fun x -> state'.Root.addChild(x))
                     |> ignore
 
                     let data =
-                      { BulletsContainer = new Container()
-                        EntitiesContainer = entitiesContainer
-                        Bullets = []
-                        Player = PlayerState.Create(player :?> ESprite)
+                      { EntitiesContainer = entitiesContainer
+                        Player = PlayerState.Create(player)
                       }
 
-                    [ data.BulletsContainer
-                      data.EntitiesContainer
+                    entitiesContainer.addChild(player) |> ignore
+
+                    [ data.EntitiesContainer
                     ]
                     |> (fun x -> state'.Root.addChild(unbox x))
                     |> ignore
@@ -213,83 +190,28 @@ module Main =
                     // Add here the game logic
                     // Example: Player movement
                     let data = gameState.GetData<StateLevel1>()
-                    let now = DateTime.Now
 
-                    let moveBullets (data: StateLevel1) =
-                      for bullet in data.Bullets do
-                        bullet.__X <- bullet.__X + bullet.Direction.X * gameState.DeltaTime
-                        bullet.__Y <- bullet.__Y + bullet.Direction.Y * gameState.DeltaTime
+                    let playerWalk (gameState: GameState) (data: StateLevel1) =
+                      let keyboard = gameState.KeyboardState
+
+                      let dir =
+                        if keyboard.IsPress(Keyboard.Keys.ArrowRight) then
+                          1.
+                        else if keyboard.IsPress(Keyboard.Keys.ArrowLeft) then
+                          -1.
+                        else
+                          0.
+
+                      data.Player.X <- data.Player.X + (dir * data.Player.Speed * gameState.DeltaTime)
                       data
-
-                    let isSpriteOffScreen (bounds: Rectangle) (sprite: Sprite) =
-                      let sx = sprite.position.x
-                      let sy = sprite.position.y
-
-                      (sx + sprite.width) < bounds.x
-                        || (sy + sprite.height) < bounds.y
-                        || (sprite.y - sprite.height) >= bounds.height
-                        || (sx - sprite.width) > bounds.width
-
-                    let killBulletsOffScreen (bounds: Rectangle) (data: StateLevel1) =
-                      let liveBullets =
-                        data.Bullets
-                        |> List.filter(fun x ->
-                          not (isSpriteOffScreen bounds x.Sprite)
-                        )
-                      { data with Bullets = liveBullets }
-
-                    let createBullet originX originY (mousePosition: Point) =
-                      let dir = Vector (mousePosition.x - originX, mousePosition.y - originY)
-                      gameState.Tiles?(Tiles.SPRITE_GUN_BULLET)
-                      |> unbox<Texture>
-                      |> makeSprite
-                      |> setPosition originX originY
-                      |> addToContainer data.BulletsContainer
-                      |> fun x ->
-                          { Direction = dir.Normalize()
-                            Damage = 1.
-                            Sprite = x
-                          }
-
-                    let playerInputsBullet (inputs: Inputs.Mouse.MouseState) (data: StateLevel1) =
-                      if gameState.MouseState.Left && (now - data.Player.LastShootTime) > data.Player.FireDelay then
-                        let originX = data.Player.X + 50.
-                        let originY = data.Player.Y + 29.
-                        let bullet = createBullet originX originY (gameState.MouseState.Position())
-                        { data with
-                            Bullets = bullet :: data.Bullets
-                            Player =
-                              { data.Player with
-                                  LastShootTime = now
-                              }
-                        }
-                      else
-                        data
-
-                    let playerFollowMouse (inputs: Inputs.Mouse.MouseState) (data: StateLevel1) =
-                      let mousePos = inputs.Position()
-
-                      let targetAngle =
-                        Math.Atan2(mousePos.y - data.Player.Y, mousePos.x - data.Player.X)
-
-                      data.Player.Sprite.rotation <- targetAngle
-                      data
-
 
                     let stepsPlayer data =
                       data
-                      |> playerFollowMouse gameState.MouseState
-
-                    let stepBullets data =
-                      data
-                      |> moveBullets
-                      |> killBulletsOffScreen gameState.Bounds
-                      |> playerInputsBullet gameState.MouseState
+                      |> playerWalk gameState
 
                     let stepScene data =
                       data
                       |> stepsPlayer
-                      |> stepBullets
 
                     { gameState with
                         Data = stepScene data }
@@ -302,8 +224,8 @@ module Main =
             | BasicSceneDU.Init ->
                 let state' = gameState.ClearStage()
                 createText("Fable graphics")
-                |> setPosition (state'.GetCenterX()) (state'.GetCenterY())
                 |> setAnchor 0.5 0.5
+                |> setPosition (state'.GetCenterX()) (state'.GetCenterY())
                 |> (fun x -> state'.Root.addChild(x))
                 |> ignore
                 { state' with State = SplashScreen Run }
@@ -314,7 +236,6 @@ module Main =
                 else
                   gameState
             | Pause -> gameState
-
 
       state <- newState
       state.Render()

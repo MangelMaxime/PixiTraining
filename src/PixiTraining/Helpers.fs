@@ -53,7 +53,7 @@ module Helpers =
     c.addChild s |> ignore
     s
 
-  let setPosition x y (s: Sprite) =
+  let setPosition x y (s: Container) =
     s.position <- Point(x, y)
     s
 

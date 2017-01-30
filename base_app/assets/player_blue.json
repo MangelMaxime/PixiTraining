@@ -1,0 +1,35 @@
+{
+"frames": {
+	"playerBlue_walk1.png": {
+		"frame": {"x":65, "y":0, "w":45, "h":54},
+		"spriteSourceSize": {"x":0,"y":0,"w":45,"h":54},
+		"sourceSize": {"w":45,"h":54}
+	},
+	"playerBlue_walk2.png": {
+		"frame": {"x":46, "y":87, "w":45, "h":54},
+		"spriteSourceSize": {"x":0,"y":0,"w":45,"h":54},
+		"sourceSize": {"w":45,"h":54}
+	},
+	"playerBlue_walk3.png": {
+		"frame": {"x":0, "y":87, "w":45, "h":52},
+		"spriteSourceSize": {"x":0,"y":0,"w":45,"h":52},
+		"sourceSize": {"w":45,"h":52}
+	},
+	"playerBlue_walk4.png": {
+		"frame": {"x":0, "y":41, "w":49, "h":45},
+		"spriteSourceSize": {"x":0,"y":0,"w":49,"h":45},
+		"sourceSize": {"w":49,"h":45}
+	},
+	"playerBlue_walk5.png": {
+		"frame": {"x":0, "y":0, "w":64, "h":40},
+		"spriteSourceSize": {"x":0,"y":0,"w":64,"h":40},
+		"sourceSize": {"w":64,"h":40}
+	}
+
+},
+"meta": {
+	"image": "player_blue.png",
+	"size": {"w": 111, "h": 142},
+	"scale": "1"
+}
+}
