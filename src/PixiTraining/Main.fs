@@ -184,6 +184,7 @@ module Main =
                       |> unbox<Texture>
                       |> makeESprite [] "player"
                       |> setPosition 100. 100.
+                      |> setAnchor 0.5 0.5
                       |> addToContainer entitiesContainer
 
                     createText("Level 1")
@@ -216,7 +217,8 @@ module Main =
 
                     let moveBullets (data: StateLevel1) =
                       for bullet in data.Bullets do
-                        bullet.__X <- bullet.__X + 0.8 * gameState.DeltaTime
+                        bullet.__X <- bullet.__X + bullet.Direction.X * gameState.DeltaTime
+                        bullet.__Y <- bullet.__Y + bullet.Direction.Y * gameState.DeltaTime
                       data
 
                     let isSpriteOffScreen (bounds: Rectangle) (sprite: Sprite) =
@@ -236,15 +238,15 @@ module Main =
                         )
                       { data with Bullets = liveBullets }
 
-                    let createBullet originX originY mousePosition =
-
+                    let createBullet originX originY (mousePosition: Point) =
+                      let dir = Vector (mousePosition.x - originX, mousePosition.y - originY)
                       gameState.Tiles?(Tiles.SPRITE_GUN_BULLET)
                       |> unbox<Texture>
                       |> makeSprite
                       |> setPosition originX originY
                       |> addToContainer data.BulletsContainer
                       |> fun x ->
-                          { Direction = Vector(1., 1.)
+                          { Direction = dir.Normalize()
                             Damage = 1.
                             Sprite = x
                           }
@@ -253,7 +255,7 @@ module Main =
                       if gameState.MouseState.Left && (now - data.Player.LastShootTime) > data.Player.FireDelay then
                         let originX = data.Player.X + 50.
                         let originY = data.Player.Y + 29.
-                        let bullet = createBullet originX originY gameState.MouseState.Position
+                        let bullet = createBullet originX originY (gameState.MouseState.Position())
                         { data with
                             Bullets = bullet :: data.Bullets
                             Player =
@@ -264,14 +266,33 @@ module Main =
                       else
                         data
 
+                    let playerFollowMouse (inputs: Inputs.Mouse.MouseState) (data: StateLevel1) =
+                      let mousePos = inputs.Position()
+
+                      let targetAngle =
+                        Math.Atan2(mousePos.y - data.Player.Y, mousePos.x - data.Player.X)
+
+                      data.Player.Sprite.rotation <- targetAngle
+                      data
+
+
+                    let stepsPlayer data =
+                      data
+                      |> playerFollowMouse gameState.MouseState
+
                     let stepBullets data =
                       data
                       |> moveBullets
                       |> killBulletsOffScreen gameState.Bounds
                       |> playerInputsBullet gameState.MouseState
 
+                    let stepScene data =
+                      data
+                      |> stepsPlayer
+                      |> stepBullets
+
                     { gameState with
-                        Data = stepBullets data }
+                        Data = stepScene data }
                 | Pause -> gameState
 
         | SplashScreen sceneDU ->

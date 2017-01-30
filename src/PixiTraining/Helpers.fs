@@ -73,9 +73,6 @@ module Helpers =
     s.pivot <- Point(halfWidth, halfHeight)
     s
 
-  let degreesToRad degrees =
-    degrees * Math.PI / 180.
-
   let createText txt : PIXI.Text =
     Text(txt)
 
@@ -93,8 +90,11 @@ module Helpers =
     member self.Y
       with get () = y
 
+    member self.Length() =
+      Math.Sqrt(self.X * self.X + self.Y * self.Y)
+
     member self.Normalize() =
-      let length = Math.Sqrt(self.X * self.X + self.Y * self.Y)
+      let length = self.Length()
       new Vector(self.X / length, self.Y / length)
 
     static member (+) (a: Vector, b: Vector) =
@@ -105,3 +105,12 @@ module Helpers =
 
     static member (*) (s, a: Vector) =
       new Vector(s * a.X, s * a.Y)
+
+
+    type Math with
+      static member DegreesToRadian
+        with get () = Math.PI / 180.
+
+      static member RadianToDegrees
+        with get () = 180. / Math.PI
+
