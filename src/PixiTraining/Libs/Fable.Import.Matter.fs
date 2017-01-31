@@ -7,26 +7,29 @@ open Fable.Import.Browser
 #nowarn "1182"
 
 module Matter =
-    type [<AllowNullLiteral>] [<Import("Axes","Matter")>] Axes() =
-        static member fromVertices(vertices: ResizeArray<Vector>): ResizeArray<Vector> = jsNative
-        static member rotate(axes: ResizeArray<Vector>, angle: float): unit = jsNative
+    type [<KeyValueList>] IRenderDefinition =
+        interface end
 
-    and [<AllowNullLiteral>] IChamfer =
-        abstract radius: U2<float, ResizeArray<float>> option with get, set
-        abstract quality: float option with get, set
-        abstract qualityMin: float option with get, set
-        abstract qualityMax: float option with get, set
+    and [<KeyValueList>] RenderDefinition =
+        | Controller of obj
+        | [<CompiledName("engine")>] OptEngine of Engine
+        | Element of HTMLElement
+        | Canvas of HTMLCanvasElement
+        | Options of IRendererOptions
+        | Bounds of Bounds
+        | Context of CanvasRenderingContext2D
+        | Textures of obj option
+        interface IRenderDefinition
 
-    and [<KeyValueList>] IChamferableBodyDefinition =
-        inherit IBodyDefinition
+    and [<KeyValueList>] IRendererOptions =
+        interface end
 
-
-    and [<AllowNullLiteral>] [<Import("Bodies","Matter")>] Bodies() =
-        static member circle(x: float, y: float, radius: float, ?options: IBodyDefinition, ?maxSides: float): Body = jsNative
-        static member polygon(x: float, y: float, sides: float, radius: float, ?options: IChamferableBodyDefinition list): Body = jsNative
-        static member rectangle(x: float, y: float, width: float, height: float, ?options: IChamferableBodyDefinition list): Body = jsNative
-        static member trapezoid(x: float, y: float, width: float, height: float, slope: float, ?options: IChamferableBodyDefinition list): Body = jsNative
-        static member fromVertices(x: float, y: float, vertexSets: ResizeArray<ResizeArray<Vector>>, ?options: IBodyDefinition, ?flagInternal: bool, ?removeCollinear: float, ?minimumArea: float): Body = jsNative
+    and [<KeyValueList>] RendererOptions =
+        | Width of float
+        | Height of float
+        | HasBounds of bool
+        | Wireframes of bool
+        interface IRendererOptions
 
     and [<KeyValueList>] IBodyDefinition =
         interface end
@@ -53,7 +56,7 @@ module Matter =
         | Mass of float
         | Motion of float
         | Position of Vector
-        | Render of IBodyRenderOptions
+        | [<CompiledName("Render")>] OptRender of IBodyRenderOptions
         | Restitution of float
         | SleepThreshold of float
         | Slop of float
@@ -68,6 +71,26 @@ module Matter =
         | FrictionStatic of float
         | CollisionFilter of ICollisionFilter
         interface IBodyDefinition
+
+    and [<KeyValueList>] IChamferableBodyDefinition =
+        inherit IBodyDefinition
+
+    and [<AllowNullLiteral>] [<Import("Axes","Matter")>] Axes() =
+        static member fromVertices(vertices: ResizeArray<Vector>): ResizeArray<Vector> = jsNative
+        static member rotate(axes: ResizeArray<Vector>, angle: float): unit = jsNative
+
+    and [<AllowNullLiteral>] IChamfer =
+        abstract radius: U2<float, ResizeArray<float>> option with get, set
+        abstract quality: float option with get, set
+        abstract qualityMin: float option with get, set
+        abstract qualityMax: float option with get, set
+
+    and [<AllowNullLiteral>] [<Import("Bodies","Matter")>] Bodies() =
+        static member circle(x: float, y: float, radius: float, ?options: IBodyDefinition, ?maxSides: float): Body = jsNative
+        static member polygon(x: float, y: float, sides: float, radius: float, ?options: IChamferableBodyDefinition list): Body = jsNative
+        static member rectangle(x: float, y: float, width: float, height: float, ?options: IChamferableBodyDefinition list): Body = jsNative
+        static member trapezoid(x: float, y: float, width: float, height: float, slope: float, ?options: IChamferableBodyDefinition list): Body = jsNative
+        static member fromVertices(x: float, y: float, vertexSets: ResizeArray<ResizeArray<Vector>>, ?options: IBodyDefinition, ?flagInternal: bool, ?removeCollinear: float, ?minimumArea: float): Body = jsNative
 
     and [<AllowNullLiteral>] IBodyRenderOptions =
         abstract visible: bool option with get, set
@@ -300,31 +323,15 @@ module Matter =
         static member region(bodies: ResizeArray<Body>, bounds: Bounds, ?outside: bool): ResizeArray<Body> = jsNative
         static member point(bodies: ResizeArray<Body>, point: Vector): ResizeArray<Body> = jsNative
 
-    and [<AllowNullLiteral>] IRenderDefinition =
-        abstract controller: obj option with get, set
-        abstract engine: Engine with get, set
-        abstract element: HTMLElement option with get, set
-        abstract canvas: HTMLCanvasElement option with get, set
-        abstract options: IRendererOptions option with get, set
-        abstract bounds: Bounds option with get, set
-        abstract context: CanvasRenderingContext2D option with get, set
-        abstract textures: obj option with get, set
-
-    and [<AllowNullLiteral>] IRendererOptions =
-        abstract width: float option with get, set
-        abstract height: float option with get, set
-        abstract hasBounds: bool option with get, set
-        abstract wireframes: bool option with get, set
-
     and [<AllowNullLiteral>] [<Import("Render","Matter")>] Render() =
         member __.controller with get(): obj = jsNative and set(v: obj): unit = jsNative
         member __.element with get(): HTMLElement = jsNative and set(v: HTMLElement): unit = jsNative
         member __.canvas with get(): HTMLCanvasElement = jsNative and set(v: HTMLCanvasElement): unit = jsNative
-        member __.options with get(): IRendererOptions = jsNative and set(v: IRendererOptions): unit = jsNative
+        member __.options with get(): IRendererOptions list = jsNative and set(v: IRendererOptions list ): unit = jsNative
         member __.bounds with get(): Bounds = jsNative and set(v: Bounds): unit = jsNative
         member __.context with get(): CanvasRenderingContext2D = jsNative and set(v: CanvasRenderingContext2D): unit = jsNative
         member __.textures with get(): obj = jsNative and set(v: obj): unit = jsNative
-        static member create(options: IRenderDefinition): Render = jsNative
+        static member create(options: IRenderDefinition list): Render = jsNative
         static member run(render: Render): unit = jsNative
         static member stop(render: Render): unit = jsNative
         static member setPixelRatio(render: Render, pixelRatio: float): unit = jsNative
