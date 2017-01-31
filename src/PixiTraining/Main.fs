@@ -238,7 +238,7 @@ module Main =
                         Ground = Matter.Bodies.rectangle(0., 600., gameState.Bounds.width, 60., !!groundOptions)
                       }
 
-                    Matter.World.add(data.World, [data.Player.Body, data.Ground]) |> ignore
+                    Matter.World.add(data.World, [| data.Player.Body; data.Ground |]) |> ignore
 
                     entitiesContainer.addChild(playerSprite) |> ignore
 
@@ -261,6 +261,9 @@ module Main =
                     Browser.console.log data.Player.Body.position.y
 
                     let playerWalk (gameState: GameState) (playerState: PlayerState) =
+                      playerState.Sprite.position.x <- playerState.Body.position.x
+                      playerState.Sprite.position.y <- playerState.Body.position.y
+
                       let keyboard = gameState.KeyboardState
 
                       let dir, anim =
