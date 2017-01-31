@@ -25,9 +25,10 @@ const PixiTrainingConfig = {
   "babelPlugins": ["transform-runtime"],
   "rollup": {
     "dest": path.join(APP_DIR, JS_DIR, PixiTraining.DEST_FILE),
-    "external": ["PIXI"],
+    "external": ["PIXI", "Matter"],
     "globals": {
-      "PIXI": "PIXI"
+      "PIXI": "PIXI",
+      "Matter": "Matter"
     }
   }
 };
@@ -41,7 +42,7 @@ const LauncherConfig = {
 
 const toDevConfig = (baseConfig) =>
   Object.assign({
-    "sourceMaps": true,
+    //"sourceMaps": true,
     "watch": true
   }, baseConfig)
 

@@ -5,7 +5,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Import
 open Fable.Import.PIXI
-open Fable.PowerPack
+open Fable.Import.Matter
 
 open PixiTraining.Inputs
 
@@ -89,6 +89,7 @@ module Main =
       Frames: Texture list
       FrameStart: DateTime
       AnimType: PlayerAnim
+      Body: Matter.Body
     }
 
     member self.X
@@ -117,7 +118,7 @@ module Main =
             FrameStart = now
         }
 
-    static member Create (sprite, frames) =
+    static member Create (sprite, frames, body) =
       { Sprite = sprite
         Health = 3
         Speed = 0.5
@@ -125,11 +126,15 @@ module Main =
         Frames = frames
         FrameStart = DateTime.Now
         AnimType = Stand
+        Body = body
       }
 
   type StateLevel1 =
     { EntitiesContainer: Container
       Player: PlayerState
+      Ground: Matter.Body
+      World: Matter.World
+      Engine: Matter.Engine
     }
 
   let kickGame (initialState: GameState) =
@@ -194,12 +199,16 @@ module Main =
 
                     let entitiesContainer = new Container()
 
-                    let player =
-                      state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
-                      |> unbox<Texture>
-                      |> makeSprite
-                      |> setAnchor 0.5 0.5
-                      |> setPosition 50. 150.
+                    let playerSprite, playerBody =
+                      let sprite =
+                        state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
+                        |> unbox<Texture>
+                        |> makeSprite
+                        |> setPosition 50. 150.
+
+                      let body =
+                        Matter.Bodies.rectangle(sprite.position.x, sprite.position.y, sprite.width, sprite.height)
+                      sprite, body
 
                     createText("Level 1")
                     |> setAnchor 0.5 0.5
@@ -208,20 +217,30 @@ module Main =
                     |> ignore
 
                     let data =
+                      let engine = Matter.Engine.create(options=null)
+                      let groundOptions =
+                        [ IsStatic
+                        ]
                       { EntitiesContainer = entitiesContainer
                         Player =
                           PlayerState.Create(
-                            player,
+                            playerSprite,
                             [ !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
                               !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_2)
                               !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_3)
                               !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_4)
                               !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_5)
-                            ]
+                            ],
+                            playerBody
                           )
+                        World = engine.world
+                        Engine = engine
+                        Ground = Matter.Bodies.rectangle(0., 600., gameState.Bounds.width, 60., !!groundOptions)
                       }
 
-                    entitiesContainer.addChild(player) |> ignore
+                    Matter.World.add(data.World, [data.Player.Body, data.Ground]) |> ignore
+
+                    entitiesContainer.addChild(playerSprite) |> ignore
 
                     [ data.EntitiesContainer
                     ]
@@ -236,6 +255,10 @@ module Main =
                     // Example: Player movement
                     let data = gameState.GetData<StateLevel1>()
                     let now = DateTime.Now
+
+                    !!Matter.Engine.update(data.Engine)
+
+                    Browser.console.log data.Player.Body.position.y
 
                     let playerWalk (gameState: GameState) (playerState: PlayerState) =
                       let keyboard = gameState.KeyboardState

@@ -60,6 +60,7 @@
   -->
   <ItemGroup>
     <Compile Include="Libs\Fable.Import.Pixi.fs" />
+    <Compile Include="Libs\Fable.Import.Matter.fs" />
     <Compile Include="SpriteSheetHelpers.fs" />
     <Compile Include="Inputs\Keyboard.fs" />
     <Compile Include="Inputs/Mouse.fs" />
