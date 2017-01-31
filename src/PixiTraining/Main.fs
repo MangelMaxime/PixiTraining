@@ -73,10 +73,22 @@ module Main =
 
   let CONTAINER_GROUND = "ground"
 
+  type Direction
+    = Right
+    | Left
+
+  type PlayerAnim
+    = Stand
+    | Walk of Direction
+
   type PlayerState =
     { Sprite: Sprite
       Health: int
       Speed: float
+      ActiveFrame: int
+      Frames: Texture list
+      FrameStart: DateTime
+      AnimType: PlayerAnim
     }
 
     member self.X
@@ -87,10 +99,32 @@ module Main =
       with get () = self.Sprite.y
       and set (value) = self.Sprite.y <- value
 
-    static member Create (sprite) =
+    member self.SetFrame (index: int) =
+      self.Sprite.texture <- self.Frames.[index]
+
+    member self.NextFrame (now: DateTime) =
+      let nextFrameId = self.ActiveFrame + 1
+      if nextFrameId > self.Frames.Length - 1 then
+        self.Sprite.texture <- self.Frames.[0]
+        { self with
+            ActiveFrame = 0
+            FrameStart = now
+        }
+      else
+        self.Sprite.texture <- self.Frames.[nextFrameId]
+        { self with
+            ActiveFrame = nextFrameId
+            FrameStart = now
+        }
+
+    static member Create (sprite, frames) =
       { Sprite = sprite
         Health = 3
         Speed = 0.5
+        ActiveFrame = 0
+        Frames = frames
+        FrameStart = DateTime.Now
+        AnimType = Stand
       }
 
   type StateLevel1 =
@@ -164,6 +198,8 @@ module Main =
                       state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
                       |> unbox<Texture>
                       |> makeSprite
+                      |> setAnchor 0.5 0.5
+                      |> setPosition 50. 150.
 
                     createText("Level 1")
                     |> setAnchor 0.5 0.5
@@ -173,7 +209,16 @@ module Main =
 
                     let data =
                       { EntitiesContainer = entitiesContainer
-                        Player = PlayerState.Create(player)
+                        Player =
+                          PlayerState.Create(
+                            player,
+                            [ !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_1)
+                              !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_2)
+                              !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_3)
+                              !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_4)
+                              !!state.PlayerBlue?(PlayerBlue.SPRITE_WALK_5)
+                            ]
+                          )
                       }
 
                     entitiesContainer.addChild(player) |> ignore
@@ -190,24 +235,43 @@ module Main =
                     // Add here the game logic
                     // Example: Player movement
                     let data = gameState.GetData<StateLevel1>()
+                    let now = DateTime.Now
 
-                    let playerWalk (gameState: GameState) (data: StateLevel1) =
+                    let playerWalk (gameState: GameState) (playerState: PlayerState) =
                       let keyboard = gameState.KeyboardState
 
-                      let dir =
+                      let dir, anim =
                         if keyboard.IsPress(Keyboard.Keys.ArrowRight) then
-                          1.
+                          1., Walk Right
                         else if keyboard.IsPress(Keyboard.Keys.ArrowLeft) then
-                          -1.
+                          -1., Walk Left
                         else
-                          0.
+                          0., Stand
 
-                      data.Player.X <- data.Player.X + (dir * data.Player.Speed * gameState.DeltaTime)
-                      data
+                      playerState.X <- playerState.X + (dir * playerState.Speed * gameState.DeltaTime)
+
+                      // Update sprite orientation
+                      match anim with
+                      | Walk Right -> playerState.Sprite.scale.x <- 1.
+                      | Walk Left -> playerState.Sprite.scale.x <- -1.
+                      | Stand -> playerState.SetFrame(0); ()
+
+                      { playerState with
+                          AnimType = anim }
+
+                    let animPlayer (playerState: PlayerState) =
+                      if now - playerState.FrameStart > TimeSpan.FromMilliseconds(100.) then
+                        match playerState.AnimType with
+                        | Stand -> playerState
+                        | Walk _ -> playerState.NextFrame(now)
+                      else
+                        playerState
 
                     let stepsPlayer data =
-                      data
+                      data.Player
                       |> playerWalk gameState
+                      |> animPlayer
+                      |> fun x -> { data with Player = x }
 
                     let stepScene data =
                       data
