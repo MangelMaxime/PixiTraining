@@ -1,6 +1,7 @@
 ﻿namespace Fable.Import
 open System
 open Fable.Core
+open Fable.Core.JsInterop
 open Fable.Import.JS
 open Fable.Import.Browser
 
@@ -476,27 +477,27 @@ module Matter =
         abstract pairs: ResizeArray<IPair> with get, set
 
     and [<AllowNullLiteral>] [<Import("Events","Matter")>] Events() =
-        [<Emit("$0.on('undefined', 'sleepStart',$1...)")>] static member on_sleepStart(callback: Func<IEvent<Body>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'sleepEnd',$1...)")>] static member on_sleepEnd(callback: Func<IEvent<Body>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeAdd',$1...)")>] static member on_beforeAdd(callback: Func<IEventComposite<Composite>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterAdd',$1...)")>] static member on_afterAdd(callback: Func<IEventComposite<Composite>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeRemove',$1...)")>] static member on_beforeRemove(callback: Func<IEventComposite<Composite>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterRemove',$1...)")>] static member on_afterRemove(callback: Func<IEventComposite<Composite>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterUpdate',$1...)")>] static member on_afterUpdate(callback: Func<IEventTimestamped<Engine>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeRender',$1...)")>] static member on_beforeRender(callback: Func<IEventTimestamped<Render>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterRender',$1...)")>] static member on_afterRender(callback: Func<IEventTimestamped<Render>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeUpdate',$1...)")>] static member on_beforeUpdate(callback: Func<IEventTimestamped<Engine>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'collisionActive',$1...)")>] static member on_collisionActive(callback: Func<IEventCollision<Engine>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'collisionEnd',$1...)")>] static member on_collisionEnd(callback: Func<IEventCollision<Engine>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'collisionStart',$1...)")>] static member on_collisionStart(callback: Func<IEventCollision<Engine>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeTick',$1...)")>] static member on_beforeTick(callback: Func<IEventTimestamped<Runner>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'tick',$1...)")>] static member on_tick(callback: Func<IEventTimestamped<Runner>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterTick',$1...)")>] static member on_afterTick(callback: Func<IEventTimestamped<Runner>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'beforeRender',$1...)")>] static member on_beforeRender(callback: Func<IEventTimestamped<Runner>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'afterRender',$1...)")>] static member on_afterRender(callback: Func<IEventTimestamped<Runner>, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'mousedown',$1...)")>] static member on_mousedown(callback: Func<obj, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'mousemove',$1...)")>] static member on_mousemove(callback: Func<obj, unit>): unit = jsNative
-        [<Emit("$0.on('undefined', 'mouseup',$1...)")>] static member on_mouseup(callback: Func<obj, unit>): unit = jsNative
-        static member on(obj: obj, name: string, callback: Func<obj, unit>): unit = jsNative
-        static member off(obj: obj, eventName: string, callback: Func<obj, unit>): unit = jsNative
-        static member trigger(``object``: obj, eventNames: string, ?``event``: Func<obj, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'sleepStart',$1...)")>] static member on_sleepStart(engine: Engine, callback: JsFunc1<IEvent<Body>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'sleepEnd',$1...)")>] static member on_sleepEnd(engine: Engine, callback: JsFunc1<IEvent<Body>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeAdd',$1...)")>] static member on_beforeAdd(engine: Engine, callback: JsFunc1<IEventComposite<Composite>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterAdd',$1...)")>] static member on_afterAdd(engine: Engine, callback: JsFunc1<IEventComposite<Composite>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeRemove',$1...)")>] static member on_beforeRemove(engine: Engine, callback: JsFunc1<IEventComposite<Composite>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterRemove',$1...)")>] static member on_afterRemove(engine: Engine, callback: JsFunc1<IEventComposite<Composite>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterUpdate',$1...)")>] static member on_afterUpdate(engine: Engine, callback: JsFunc1<IEventTimestamped<Engine>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeRender',$1...)")>] static member on_beforeRender(engine: Engine, callback: JsFunc1<IEventTimestamped<Render>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterRender',$1...)")>] static member on_afterRender(engine: Engine, callback: JsFunc1<IEventTimestamped<Render>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeUpdate',$1...)")>] static member on_beforeUpdate(engine: Engine, callback: JsFunc1<IEventTimestamped<Engine>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'collisionActive',$1...)")>] static member on_collisionActive(engine: Engine, callback: JsFunc1<IEventCollision<Engine>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'collisionEnd',$2...)")>] static member on_collisionEnd(engine: Engine, callback: JsFunc1<IEventCollision<Engine>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'collisionStart',$1...)")>] static member on_collisionStart(engine: Engine, callback: JsFunc1<IEventCollision<Engine>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeTick',$1...)")>] static member on_beforeTick(engine: Engine, callback: JsFunc1<IEventTimestamped<Runner>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'tick',$1...)")>] static member on_tick(engine: Engine, callback: JsFunc1<IEventTimestamped<Runner>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterTick',$1...)")>] static member on_afterTick(engine: Engine, callback: JsFunc1<IEventTimestamped<Runner>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'beforeRender',$1...)")>] static member on_beforeRender(engine: Engine, callback: JsFunc1<IEventTimestamped<Runner>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'afterRender',$1...)")>] static member on_afterRender(engine: Engine, callback: JsFunc1<IEventTimestamped<Runner>, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'mousedown',$1...)")>] static member on_mousedown(engine: Engine, callback: JsFunc1<obj, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'mousemove',$1...)")>] static member on_mousemove(engine: Engine, callback: JsFunc1<obj, unit>): unit = jsNative
+        [<Emit("Matter.Events.on($0,'mouseup',$1...)")>] static member on_mouseup(engine: Engine, callback: JsFunc1<obj, unit>): unit = jsNative
+        static member on(obj: obj, name: string, callback: JsFunc1<obj, unit>): unit = jsNative
+        static member off(obj: obj, eventName: string, callback: JsFunc1<obj, unit>): unit = jsNative
+        static member trigger(``object``: obj, eventNames: string, ?``event``: JsFunc1<obj, unit>): unit = jsNative
