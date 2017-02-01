@@ -102,7 +102,8 @@ module Keyboard =
       self.LastKeyIsPrintable <- false
       self.LastKey <- Keys.Dead -1
 
-  let init (canvas: Browser.HTMLElement) =
+  let init (element: Browser.HTMLElement) =
+    Browser.console.log "okpok"
     let state = KeyboardState.Initial
 
     let updateModifiers (e: Browser.KeyboardEvent) =
@@ -112,9 +113,9 @@ module Keyboard =
       state.Modifiers.CommandLeft <- e.keyCode = 224.
       state.Modifiers.CommandRight <- e.keyCode = 224.
 
-    canvas.addEventListener_keydown(
+    element.addEventListener_keydown(
       fun ev ->
-
+        Browser.console.log "2"
         let code = int ev.keyCode
         let key = resolveKeyFromCode code
 
@@ -138,7 +139,7 @@ module Keyboard =
         null
     )
 
-    canvas.addEventListener_keyup(fun ev ->
+    element.addEventListener_keyup(fun ev ->
       let code = int ev.keyCode
 
       state.KeysPressed <- Set.remove (resolveKeyFromCode code) state.KeysPressed

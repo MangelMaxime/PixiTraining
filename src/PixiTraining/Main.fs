@@ -22,7 +22,9 @@ module Main =
         OptEngine engine
       ]
 
-  let kbState = Keyboard.init(render.canvas)
+  render.canvas.id <- "game"
+
+  let kbState = Keyboard.init(!!Browser.window)
 
   type Player =
     { Body: Body
@@ -46,13 +48,14 @@ module Main =
 
   let player =
     let body =
-      Bodies.circle(100., 100., 25.,
+      Bodies.rectangle(100., 100., 25., 80.,
         !![
-          Density 0.001
-          Friction 0.7
-          FrictionStatic 0.
+          Friction 0.1
+          FrictionStatic 0.1
           FrictionAir 0.01
-          Restitution 0.5
+          Slop 0.
+          Inertia JS.Infinity
+          InverseInertia 0.
         ]
       )
     { Body = body
@@ -63,7 +66,41 @@ module Main =
 
   Events.on_collisionStart(engine, JsFunc1(fun ev ->
     let pairs = ev.pairs
-    Browser.console.log "ijoijoi"
+    for pair in pairs do
+      if pair.bodyA = player.Body || pair.bodyB = player.Body then
+        player.Ground <- true
+  ))
+
+  Events.on_collisionActive(engine, JsFunc1(fun ev ->
+    let pairs = ev.pairs
+    for pair in pairs do
+      if pair.bodyA = player.Body || pair.bodyB = player.Body then
+        player.Ground <- true
+  ))
+
+  Events.on_collisionEnd(engine, JsFunc1(fun ev ->
+    let pairs = ev.pairs
+    for pair in pairs do
+      if pair.bodyA = player.Body || pair.bodyB = player.Body then
+        player.Ground <- false
+  ))
+
+  let speed = 3.
+
+  Events.on_beforeTick(engine, JsFunc1(fun ev ->
+    Browser.console.log "okpo"
+    if kbState.IsPress(Keyboard.Keys.ArrowRight) then
+      let vec = player.Body.velocity
+      vec.x <- speed
+      Body.setVelocity(player.Body, vec)
+    else if kbState.IsPress(Keyboard.Keys.ArrowLeft) then
+      let vec = player.Body.velocity
+      vec.x <- -speed
+      Body.setVelocity(player.Body, vec)
+
+
+    if kbState.IsPress(Keyboard.Keys.Space) && player.Ground then
+      player.Body.force <- Vector.create(0., -0.1)
   ))
 
   Engine.run(engine)
