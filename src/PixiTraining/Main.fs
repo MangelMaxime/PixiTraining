@@ -13,95 +13,64 @@ open System
 
 module Main =
 
-  let engine = Matter.Engine.create(null)
+  type Scene (engine) =
+    member val Root : Container = null with get, set
+    member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
+    member val Level : bool [] [] = [||]
+    member val Engine = engine with get, set
 
-  let render =
-    Matter.Render.create
-      [
-        Element Browser.document.body
-        OptEngine engine
-      ]
+  type Engine () =
+    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
+    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
+    member val StartDate : DateTime = DateTime.Now with get, set
+    member val LastTickDate = 0. with get, set
+    member val DeltaTime = 0. with get, set
 
-  render.canvas.id <- "game"
-
-  let kbState = Keyboard.init(!!Browser.window)
-
-  type Player =
-    { Body: Body
-      mutable Ground: bool
-    }
-
-
-  let offset = 5.
-  World.add(engine.world,
-    [|
-      // Walls
-      Bodies.rectangle(400., -offset, 800. + 2. * offset, 50., !![ IsStatic ])
-      Bodies.rectangle(400., 600. + offset, 800. + 2. * offset, 50., !![ IsStatic ])
-      Bodies.rectangle(800. + offset, 300., 50., 600. + 2. * offset, !![ IsStatic ])
-      Bodies.rectangle(-offset, 300., 50., 600. + 2. * offset, !![ IsStatic ])
-      // Ramp
-      Bodies.rectangle(600., 350., 700., 20., !![ IsStatic; Angle (-Math.PI * 0.1)])
-      Bodies.rectangle(340., 580., 700., 20., !![ IsStatic; Angle (Math.PI * 0.6)])
-    |]
-  ) |> ignore
-
-  let player =
-    let body =
-      Bodies.rectangle(100., 100., 25., 80.,
-        !![
-          Friction 0.1
-          FrictionStatic 0.1
-          FrictionAir 0.01
-          Slop 0.
-          Inertia JS.Infinity
-          InverseInertia 0.
+    member self.Init () =
+      let options =
+        [ BackgroundColor (float 0x9999bb)
+          Resolution 1.
+          Antialias true
         ]
+      // Init the renderer
+      self.Renderer <- WebGLRenderer(1024., 800., options)
+      // Init the canvas
+      self.Canvas <- self.Renderer.view
+      self.Canvas.setAttribute("tabindex", "1")
+      self.Canvas.id <- "game"
+      self.Canvas.focus()
+
+      self.Canvas.addEventListener_click(fun ev ->
+        self.Canvas.focus()
+        null
       )
-    { Body = body
-      Ground = false
-    }
 
-  World.add(engine.world, player.Body) |> ignore
+      Browser.document.body
+        .appendChild(self.Canvas) |> ignore
 
-  Events.on_collisionStart(engine, JsFunc1(fun ev ->
-    let pairs = ev.pairs
-    for pair in pairs do
-      if pair.bodyA = player.Body || pair.bodyB = player.Body then
-        player.Ground <- true
-  ))
+    member self.Start() =
+      self.StartDate <- DateTime.Now
+      self.RequestUpdate()
 
-  Events.on_collisionActive(engine, JsFunc1(fun ev ->
-    let pairs = ev.pairs
-    for pair in pairs do
-      if pair.bodyA = player.Body || pair.bodyB = player.Body then
-        player.Ground <- true
-  ))
+    member self.RequestUpdate() =
+      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
 
-  Events.on_collisionEnd(engine, JsFunc1(fun ev ->
-    let pairs = ev.pairs
-    for pair in pairs do
-      if pair.bodyA = player.Body || pair.bodyB = player.Body then
-        player.Ground <- false
-  ))
+    member self.Update(dt: float) =
+      Browser.console.log "loop"
 
-  let speed = 3.
-
-  Events.on_beforeTick(engine, JsFunc1(fun ev ->
-    Browser.console.log "okpo"
-    if kbState.IsPress(Keyboard.Keys.ArrowRight) then
-      let vec = player.Body.velocity
-      vec.x <- speed
-      Body.setVelocity(player.Body, vec)
-    else if kbState.IsPress(Keyboard.Keys.ArrowLeft) then
-      let vec = player.Body.velocity
-      vec.x <- -speed
-      Body.setVelocity(player.Body, vec)
+      self.RequestUpdate()
 
 
-    if kbState.IsPress(Keyboard.Keys.Space) && player.Ground then
-      player.Body.force <- Vector.create(0., -0.1)
-  ))
+  let test =
+    [|
+      [| 0; 1; 2; 3 |]
+      [| 10; 11; 12; 13 |]
+    |]
 
-  Engine.run(engine)
-  Render.run(render)
+  Browser.console.log test.[0].[2]
+  Browser.console.log test.[1].[2]
+
+  // Create and init the engine instance
+  let engine = new Engine()
+  engine.Init()
+  engine.Start()

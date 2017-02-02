@@ -43,43 +43,6 @@ module Helpers =
           _disposed <- true
           self.parent.removeChild(self) |> ignore
 
-  let makeSprite t =
-    Sprite t
-
-  let makeESprite (behaviors: Behavior list) id (t: Texture) =
-    new ESprite(t, id, behaviors)
-
-  let addToContainer (c: Container) (s: Sprite) =
-    c.addChild s |> ignore
-    s
-
-  let setPosition x y (s: Sprite) =
-    s.position <- Point(x, y)
-    s
-
-  let drawRect (g:Graphics) color width height =
-    g.beginFill(float color) |> ignore
-    g.drawRect(0., 0., width, height) |> ignore
-    g.endFill() |> ignore
-    g
-
-  let setRotation angle (s: Sprite) =
-    s.rotation <- angle
-    s
-
-  let centerPivot (s: Sprite) =
-    let halfWidth = s.width / 2.
-    let halfHeight = s.height / 2.
-    s.pivot <- Point(halfWidth, halfHeight)
-    s
-
-  let createText txt : PIXI.Text =
-    Text(txt)
-
-  let setAnchor x y (s: Sprite) =
-    s.anchor <- Point(x, y)
-    s
-
   type Vector (?x, ?y) =
     let x = defaultArg x 0.
     let y = defaultArg y 0.

@@ -78,7 +78,7 @@ module PIXI =
         abstract data: obj (*InteractionData*) with get, set
         abstract stopPropagation: unit -> unit
 
-    type [<Import("EventEmitter","PIXI")>] EventEmitter() =
+    type [<AllowNullLiteral>] [<Import("EventEmitter","PIXI")>] EventEmitter() =
         member __.listeners(``event``: string): ResizeArray<Function> = failwith "JS only"
         member __.emit(``event``: string, [<ParamArray>] args: obj[]): bool = failwith "JS only"
         member __.on(``event``: string, fn: Function, ?context: obj): EventEmitter = failwith "JS only"
@@ -88,7 +88,7 @@ module PIXI =
         member __.off(``event``: string, ?fn: Function, ?context: obj, ?once: bool): EventEmitter = failwith "JS only"
         member __.addListener(``event``: string, fn: Function, ?context: obj): EventEmitter = failwith "JS only"
 
-    and [<Import("DisplayObject","PIXI")>] DisplayObject() =
+    and [<AllowNullLiteral>] [<Import("DisplayObject","PIXI")>] DisplayObject() =
         inherit EventEmitter()
         // interface interaction.InteractiveTarget
         member __._originalRenderWebGL with get(): WebGLRenderer = failwith "JS only" and set(v: WebGLRenderer): unit = failwith "JS only"
@@ -178,7 +178,7 @@ module PIXI =
         [<Emit("$0.once('touchstart',$1...)")>] member __.once_touchstart(fn: Func<InteractionEvent, unit>, ?context: obj): EventEmitter = failwith "JS only"
         member __.once(``event``: string, fn: Function, ?context: obj): EventEmitter = failwith "JS only"
 
-    and [<Import("Container","PIXI")>] Container() =
+    and [<AllowNullLiteral>] [<Import("Container","PIXI")>] Container() =
         inherit DisplayObject()
         member __.onChildrenChange with get(): Func<unit> = failwith "JS only" and set(v: Func<unit>): unit = failwith "JS only"
         member __.children with get(): ResizeArray<DisplayObject> = failwith "JS only" and set(v: ResizeArray<DisplayObject>): unit = failwith "JS only"
