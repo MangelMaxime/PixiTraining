@@ -39,8 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{8DD102BE-C
 		base_app\libs\matter.js = base_app\libs\matter.js
 		base_app\libs\matter.min.js = base_app\libs\matter.min.js
 		base_app\libs\pixi.js = base_app\libs\pixi.js
-		base_app\libs\pixi.min.js = base_app\libs\pixi.min.js
-		base_app\libs\pixi.min.js.map = base_app\libs\pixi.min.js.map
+		base_app\libs\pixi.js.map = base_app\libs\pixi.js.map
 	EndProjectSection
 EndProject
 Global

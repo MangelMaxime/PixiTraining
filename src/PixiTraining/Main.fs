@@ -15,7 +15,59 @@ module Main =
 
   let GRID = 32.
 
-  type Scene (engine) as self =
+  type Entity (scene) as self =
+
+    // Base coordinates
+    member val cx = 5 with get, set
+    member val cy = 0 with get, set
+    member val xr = 0.5 with get, set
+    member val yr = 0.5 with get, set
+    // Resulting coordinates
+    member val xx = 0. with get, set
+    member val yy = 0. with get, set
+    // Graphical object
+    member val Graphics : Graphics = Graphics() with get, set
+    // Scene instance
+    member val scene: Scene = scene with get, set
+    // Movements
+    member val dx = 0. with get, set
+    member val dy= 0. with get, set
+
+    member self.Init() =
+      !!self.Graphics.beginFill(float 0xFFFF00)
+      !!self.Graphics.drawCircle(0., 0., GRID * 0.5)
+      !!self.Graphics.endFill()
+
+      !!self.scene.Root.addChild(self.Graphics)
+      self
+
+    member self.Update(dt: float) =
+
+      // Update internal position and update Graphics
+      self.xx <- (float self.cx + self.xr) * GRID
+      self.yy <- (float self.cy + self.yr) * GRID
+      self.Graphics.x <- self.xx
+      self.Graphics.y <- self.yy
+      ()
+
+    member self.SetCoordinates(x, y) =
+      self.xx <- float x
+      self.yy <- float y
+      self.cx <- int(self.xx / GRID)
+      self.cy <- int(self.yy / GRID)
+      self.xr <- (self.xx - float self.cx * GRID) / GRID
+      self.yr <- (self.yy - float self.cy * GRID) / GRID
+
+    member self.HasCollision(cx, cy) =
+      if cx < 0 || cx > scene.Level.Length || cy >= scene.Level.[cx].Length then
+        true
+      else
+        scene.Level.[cx].[cy]
+
+    member self.OnGround () =
+      self.HasCollision(self.cx, self.cy+1) && self.yr > 0.5
+
+  and Scene (engine) as self =
     let rand = Random()
 
     member val Root : Container = Container() with get
@@ -23,6 +75,7 @@ module Main =
     member val Level : bool [] [] = [||]
     member val Blocks : Graphics = Graphics()
     member val Engine = engine with get, set
+    member val Player = Entity(self).Init() with get, set
 
     member self.Init() =
       self.MouseState <- Mouse.init self.Root
@@ -36,9 +89,12 @@ module Main =
           self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
           if self.Level.[x].[y] then
             !!self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID)
+
+      !!self.Blocks.endFill()
       self
 
     member self.Update(dt: float) =
+      self.Player.Update(dt)
       ()
 
   and Engine () =
@@ -80,7 +136,9 @@ module Main =
 
     member self.Update(dt: float) =
       match self.Scene with
-      | Some scene -> self.Renderer.render(scene.Root)
+      | Some scene ->
+          scene.Update(dt)
+          self.Renderer.render(scene.Root)
       | None -> Browser.console.warn "No scene."
       self.RequestUpdate()
 
