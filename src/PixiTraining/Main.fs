@@ -13,18 +13,41 @@ open System
 
 module Main =
 
-  type Scene (engine) =
-    member val Root : Container = null with get, set
+  let GRID = 32.
+
+  type Scene (engine) as self =
+    let rand = Random()
+
+    member val Root : Container = Container() with get
     member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
     member val Level : bool [] [] = [||]
+    member val Blocks : Graphics = Graphics()
     member val Engine = engine with get, set
 
-  type Engine () =
+    member self.Init() =
+      self.MouseState <- Mouse.init self.Root
+
+      !!self.Root.addChild(self.Blocks)
+      !!self.Blocks.beginFill(float 0x525252)
+
+      for x = 0 to 32 do
+        self.Level.[x] <- [||]
+        for y = 0 to 25 do
+          self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
+          if self.Level.[x].[y] then
+            !!self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID)
+      self
+
+    member self.Update(dt: float) =
+      ()
+
+  and Engine () =
     member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
     member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
     member val StartDate : DateTime = DateTime.Now with get, set
     member val LastTickDate = 0. with get, set
     member val DeltaTime = 0. with get, set
+    member val Scene: Scene option = None with get, set
 
     member self.Init () =
       let options =
@@ -56,21 +79,20 @@ module Main =
       Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
 
     member self.Update(dt: float) =
-      Browser.console.log "loop"
-
+      match self.Scene with
+      | Some scene -> self.Renderer.render(scene.Root)
+      | None -> Browser.console.warn "No scene."
       self.RequestUpdate()
 
+    member self.SetScene(scene) =
+      self.Scene <- Some scene
 
-  let test =
-    [|
-      [| 0; 1; 2; 3 |]
-      [| 10; 11; 12; 13 |]
-    |]
-
-  Browser.console.log test.[0].[2]
-  Browser.console.log test.[1].[2]
 
   // Create and init the engine instance
   let engine = new Engine()
   engine.Init()
+
+
+  let scene = Scene(engine).Init()
+  engine.SetScene(scene)
   engine.Start()
