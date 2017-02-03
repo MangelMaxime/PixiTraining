@@ -14,7 +14,7 @@ open System
 module Main =
 
   let GRID = 32.
-
+  //http://vasir.net/blog/game-development/how-to-build-entity-component-system-in-javascript
   type Entity (scene) =
 
     // Base coordinates
