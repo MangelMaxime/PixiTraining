@@ -15,7 +15,7 @@ module Main =
 
   let GRID = 32.
 
-  type Entity (scene) as self =
+  type Entity (scene) =
 
     // Base coordinates
     member val cx = 5 with get, set
@@ -31,17 +31,61 @@ module Main =
     member val scene: Scene = scene with get, set
     // Movements
     member val dx = 0. with get, set
-    member val dy= 0. with get, set
+    member val dy = 0. with get, set
 
     member self.Init() =
-      !!self.Graphics.beginFill(float 0xFFFF00)
-      !!self.Graphics.drawCircle(0., 0., GRID * 0.5)
-      !!self.Graphics.endFill()
+      self.Graphics.beginFill(float 0xFFFF00) |> ignore
+      self.Graphics.drawCircle(0., 0., GRID * 0.5) |> ignore
+      self.Graphics.endFill() |> ignore
 
-      !!self.scene.Root.addChild(self.Graphics)
+      self.scene.Root.addChild(self.Graphics) |> ignore
       self
 
     member self.Update(dt: float) =
+      let frictX = 0.75
+      let frictY = 0.94
+      let gravity = 0.04
+
+      // X component
+      self.xr <- self.xr + self.dx
+      self.dx <- self.dx * frictX
+
+      if self.HasCollision(self.cx - 1, self.cy) && self.xr <= 0.3 then
+        self.dx <- 0.
+        self.xr <- 0.3
+
+      if self.HasCollision(self.cx + 1, self.cy) && self.xr >= 0.7 then
+        self.dx <- 0.
+        self.xr <- 0.7
+
+      while self.xr < 0. do
+        self.cx <- self.cx - 1
+        self.xr <- self.xr + 1.
+
+      while self.xr > 1. do
+        self.cx <- self.cx + 1
+        self.xr <- self.xr - 1.
+
+      // Y component
+      self.dy <- self.dy - gravity
+      self.yr <- self.yr - self.dy
+      self.dy <- self.dy * frictY
+
+      if self.HasCollision(self.cx, self.cy - 1 ) && self.yr <= 0.4 then
+        self.dy <- 0.
+        self.yr <- 0.4
+
+      if self.HasCollision(self.cx, self.cy + 1) && self.yr >= 0.5 then
+        self.dy <- 0.
+        self.yr <- 0.5
+
+      while self.yr < 0. do
+        self.cy <- self.cy - 1
+        self.yr <- self.yr + 1.
+
+      while self.yr > 1. do
+        self.cy <- self.cy + 1
+        self.yr <- self.yr - 1.
 
       // Update internal position and update Graphics
       self.xx <- (float self.cx + self.xr) * GRID
@@ -59,41 +103,63 @@ module Main =
       self.yr <- (self.yy - float self.cy * GRID) / GRID
 
     member self.HasCollision(cx, cy) =
-      if cx < 0 || cx > scene.Level.Length || cy >= scene.Level.[cx].Length then
+      if cx < 0 || cx > scene.Level.Length - 1 || cy >= scene.Level.[cx].Length then
         true
       else
         scene.Level.[cx].[cy]
 
     member self.OnGround () =
-      self.HasCollision(self.cx, self.cy+1) && self.yr > 0.5
+      self.HasCollision(self.cx, self.cy+1) && self.yr >= 0.5
 
   and Scene (engine) as self =
     let rand = Random()
 
     member val Root : Container = Container() with get
     member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
+    member val KeyboardState = Unchecked.defaultof<Keyboard.KeyboardState> with get, set
     member val Level : bool [] [] = [||]
-    member val Blocks : Graphics = Graphics()
-    member val Engine = engine with get, set
+    member val Blocks : Graphics = Unchecked.defaultof<Graphics> with get, set
+    member val Engine : Engine = engine with get, set
     member val Player = Entity(self).Init() with get, set
 
     member self.Init() =
       self.MouseState <- Mouse.init self.Root
+      self.KeyboardState <- Keyboard.init engine.Canvas
 
-      !!self.Root.addChild(self.Blocks)
-      !!self.Blocks.beginFill(float 0x525252)
-
-      for x = 0 to 32 do
-        self.Level.[x] <- [||]
-        for y = 0 to 25 do
-          self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
-          if self.Level.[x].[y] then
-            !!self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID)
-
-      !!self.Blocks.endFill()
+      self.GenerateLevel()
       self
 
+    member self.GenerateLevel() =
+      self.Blocks <- Graphics()
+      self.Root.addChild(self.Blocks) |> ignore
+      self.Blocks.beginFill(float 0x525252) |> ignore
+
+      for x = 0 to 31 do
+        self.Level.[x] <- [||]
+        for y = 0 to 24 do
+          self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
+          if self.Level.[x].[y] then
+            self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID) |> ignore
+
+      self.Blocks.endFill() |> ignore
+
     member self.Update(dt: float) =
+      let speed = 0.04
+
+      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowRight) then
+        self.Player.dx <- self.Player.dx + speed
+
+      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
+        self.Player.dx <- self.Player.dx - speed
+
+      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowUp) && self.Player.OnGround() then
+        self.Player.dy <- 0.7
+
+      if self.KeyboardState.IsPress(Keyboard.Keys.R) then
+        self.Root.removeChild(self.Blocks) |> ignore
+        self.GenerateLevel()
+        self.Player.SetCoordinates(5 * int GRID, 0)
+
       self.Player.Update(dt)
       ()
 
@@ -117,7 +183,6 @@ module Main =
       self.Canvas <- self.Renderer.view
       self.Canvas.setAttribute("tabindex", "1")
       self.Canvas.id <- "game"
-      self.Canvas.focus()
 
       self.Canvas.addEventListener_click(fun ev ->
         self.Canvas.focus()
@@ -126,6 +191,8 @@ module Main =
 
       Browser.document.body
         .appendChild(self.Canvas) |> ignore
+
+      self.Canvas.focus()
 
     member self.Start() =
       self.StartDate <- DateTime.Now

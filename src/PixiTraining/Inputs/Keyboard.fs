@@ -38,6 +38,7 @@ module Keyboard =
       | A
       | B
       | C
+      | R
 
   let resolveKeyFromCode keycode =
     match keycode with
@@ -57,6 +58,7 @@ module Keyboard =
     | 65 -> Keys.A
     | 66 -> Keys.B
     | 67 -> Keys.C
+    | 82 -> Keys.R
     | _ -> Keys.Dead keycode
 
   type Modifiers =
@@ -103,7 +105,6 @@ module Keyboard =
       self.LastKey <- Keys.Dead -1
 
   let init (element: Browser.HTMLElement) =
-    Browser.console.log "okpok"
     let state = KeyboardState.Initial
 
     let updateModifiers (e: Browser.KeyboardEvent) =
@@ -115,7 +116,6 @@ module Keyboard =
 
     element.addEventListener_keydown(
       fun ev ->
-        Browser.console.log "2"
         let code = int ev.keyCode
         let key = resolveKeyFromCode code
 
