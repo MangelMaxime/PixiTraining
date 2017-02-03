@@ -121,10 +121,14 @@ module Main =
     member val Blocks : Graphics = Unchecked.defaultof<Graphics> with get, set
     member val Engine : Engine = engine with get, set
     member val Player = Entity(self).Init() with get, set
+    member val InfoText: PIXI.Text = Unchecked.defaultof<PIXI.Text> with get, set
 
     member self.Init() =
       self.MouseState <- Mouse.init self.Root
       self.KeyboardState <- Keyboard.init engine.Canvas
+
+      self.InfoText <- PIXI.Text("Use arrows to move. \nPress R to start a new level")
+      self.Root.addChild(self.InfoText) |> ignore
 
       self.GenerateLevel()
       self
