@@ -10,109 +10,196 @@ open Fable.Import.Matter
 open PixiTraining.Inputs
 
 open System
+open System.Collections.Generic
 
 module Main =
 
   let GRID = 32.
   //http://vasir.net/blog/game-development/how-to-build-entity-component-system-in-javascript
-  type Entity (scene) =
 
-    // Base coordinates
-    member val cx = 5 with get, set
-    member val cy = 0 with get, set
-    member val xr = 0.5 with get, set
-    member val yr = 0.5 with get, set
-    // Resulting coordinates
-    member val xx = 0. with get, set
-    member val yy = 0. with get, set
-    // Graphical object
-    member val Graphics : Graphics = Graphics() with get, set
-    // Scene instance
-    member val scene: Scene = scene with get, set
-    // Movements
-    member val dx = 0. with get, set
-    member val dy = 0. with get, set
+  type IComponent =
+    interface end
 
-    member self.Init() =
-      self.Graphics.beginFill(float 0xFFFF00) |> ignore
-      self.Graphics.drawCircle(0., 0., GRID * 0.5) |> ignore
-      self.Graphics.endFill() |> ignore
+  type Position =
+    { mutable cx: int
+      mutable cy: int
+      mutable xr: float
+      mutable yr: float
+      mutable xx: float
+      mutable yy: float
+    }
 
-      self.scene.Root.addChild(self.Graphics) |> ignore
-      self
+    interface IComponent
 
-    member self.Update(dt: float) =
-      let frictX = 0.75
-      let frictY = 0.94
-      let gravity = 0.04
+    static member Create() =
+      { cx = 0
+        cy = 0
+        xr = 0.
+        yr = 0.
+        xx = 0.
+        yy = 0.
+      }
 
-      // X component
-      self.xr <- self.xr + self.dx
-      self.dx <- self.dx * frictX
+  type Moveable =
+    { mutable dx: float
+      mutable Dy: float
+    }
 
-      if self.HasCollision(self.cx - 1, self.cy) && self.xr <= 0.3 then
-        self.dx <- 0.
-        self.xr <- 0.3
+    interface IComponent
 
-      if self.HasCollision(self.cx + 1, self.cy) && self.xr >= 0.7 then
-        self.dx <- 0.
-        self.xr <- 0.7
+    static member Create(?dx, ?dy) =
+      { dx = defaultArg dx 0.
+        Dy = defaultArg dy 0.
+      }
 
-      while self.xr < 0. do
-        self.cx <- self.cx - 1
-        self.xr <- self.xr + 1.
+  type DisplayableGraphics =
+    { mutable Sprite: Graphics
+    }
 
-      while self.xr > 1. do
-        self.cx <- self.cx + 1
-        self.xr <- self.xr - 1.
+    interface IComponent
 
-      // Y component
-      self.dy <- self.dy - gravity
-      self.yr <- self.yr - self.dy
-      self.dy <- self.dy * frictY
+  type UserControlled =
+    inherit IComponent
 
-      if self.HasCollision(self.cx, self.cy - 1 ) && self.yr <= 0.4 then
-        self.dy <- 0.
-        self.yr <- 0.4
+  type Entity =
+    { Id: String
+      Components: Dictionary<string, IComponent>
+    }
 
-      if self.HasCollision(self.cx, self.cy + 1) && self.yr >= 0.5 then
-        self.dy <- 0.
-        self.yr <- 0.5
+    member self.HasComponent<'T>() =
+      self.Components.ContainsKey(typeof<'T>.Name)
 
-      while self.yr < 0. do
-        self.cy <- self.cy - 1
-        self.yr <- self.yr + 1.
+    [<PassGenerics>]
+    member self.GetComponent<'T>() =
+      unbox<'T> self.Components.[typeof<'T>.Name]
 
-      while self.yr > 1. do
-        self.cy <- self.cy + 1
-        self.yr <- self.yr - 1.
+  let addComponent<'T> comp entity =
+    entity.Components.Add(typeof<'T>.Name, comp)
+    entity
 
-      // Update internal position and update Graphics
-      self.xx <- (float self.cx + self.xr) * GRID
-      self.yy <- (float self.cy + self.yr) * GRID
-      self.Graphics.x <- self.xx
-      self.Graphics.y <- self.yy
-      ()
+  let removeComponent key entity =
+    entity.Components.Remove(key) |> ignore
+    entity
 
-    member self.SetCoordinates(x, y) =
-      self.xx <- float x
-      self.yy <- float y
-      self.cx <- int(self.xx / GRID)
-      self.cy <- int(self.yy / GRID)
-      self.xr <- (self.xx - float self.cx * GRID) / GRID
-      self.yr <- (self.yy - float self.cy * GRID) / GRID
+  let createPlayer () =
+    { Id = "player"
+      Components = Dictionary<string, IComponent>()
+    }
+    |> addComponent<Moveable> (Moveable.Create())
+    |> addComponent<Position> (Position.Create())
+    |> addComponent<UserControlled> (Unchecked.defaultof<UserControlled>)
 
-    member self.HasCollision(cx, cy) =
-      if cx < 0 || cx > scene.Level.Length - 1 || cy >= scene.Level.[cx].Length then
-        true
-      else
-        scene.Level.[cx].[cy]
+  let hasCollision cx cy (level: bool [] []) =
+    if cx < 0 || cx > level.Length - 1 || cy >= level.[cx].Length then
+      true
+    else
+      level.[cx].[cy]
 
-    member self.OnGround () =
-      self.HasCollision(self.cx, self.cy+1) && self.yr >= 0.5
-
-  and Scene (engine) as self =
+  let generateLevel () =
     let rand = Random()
+    let blocks = Graphics()
+    let mutable level = [||]
+    blocks.beginFill(float 0x525252) |> ignore
+
+    for x = 0 to 31 do
+      level.[x] <- [||]
+      for y = 0 to 24 do
+        level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
+        if level.[x].[y] then
+          blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID) |> ignore
+
+    blocks.endFill() |> ignore
+    blocks
+
+  type SceneState =
+    { MouseState: Mouse.MouseState
+      KeyboardState: Keyboard.KeyboardState
+      Level: bool [][]
+    }
+
+
+  let options =
+    [ BackgroundColor (float 0x9999bb)
+      Resolution 1.
+      Antialias true
+    ]
+  // Init the renderer
+  let renderer = WebGLRenderer(1024., 800., options)
+  // Init the canvas
+  renderer.view.setAttribute("tabindex", "1")
+  renderer.view.id <- "game"
+
+  renderer.view.addEventListener_click(fun ev ->
+    renderer.view.focus()
+    null
+  )
+
+  Browser.document.body
+    .appendChild(renderer.view) |> ignore
+
+  renderer.view.focus()
+
+  let root = Container()
+
+  let mouseState = Mouse.init root
+  let keyboardState = Keyboard.init renderer.view
+
+  let systemUserInputs (entities: Entity list) =
+    for entity in entities do
+      if entity.HasComponent<UserControlled>() && entity.HasComponent<Moveable>() then
+        let moveable = entity.GetComponent<Moveable>()
+        let speed = 0.04
+
+        if keyboardState.IsPress(Keyboard.Keys.ArrowRight) then
+          moveable.dx <- moveable.dx + speed
+        else if keyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
+          moveable.dx <- moveable.dx - speed
+
+
+  let systemPhysics (sceneState: SceneState) (entities: Entity list) =
+    for entity in entities do
+      if entity.HasComponent<Position>() && entity.HasComponent<Moveable>() then
+        let position = entity.GetComponent<Position>()
+        let moveable = entity.GetComponent<Moveable>()
+
+        let frictX = 0.75
+        let frictY = 0.94
+        let gravity = 0.04
+
+        // X Components
+        position.xr <- position.xr + moveable.dx
+        moveable.dx <- moveable.dx + frictX
+
+        if hasCollision (position.cx - 1) position.cy sceneState.Level && position.xr <= 0.3 then
+          moveable.dx <- 0.
+          position.xr <- 0.3
+
+        if hasCollision (position.cx + 1) position.cy sceneState.Level && position.xr >= 0.7 then
+          moveable.dx <- 0.
+          position.xr <- 0.7
+
+        while position.xr < 0. do
+          position.cx <- position.cx - 1
+          position.xr <- position.xr + 1.
+
+        while position.xr > 1. do
+          position.cx <- position.cx + 1
+          position.xr <- position.xr - 1.
+
+        position.xx <- (float position.cx + position.xr) * GRID
+        position.yy <- (float position.cy + position.yr) * GRID
+
+  let systemRenderer (entities: Entity list) =
+    for entity in entities do
+      if entity.HasComponent<Position>() && entity.HasComponent<DisplayableGraphics>() then
+        let position = entity.GetComponent<Position>()
+        let display = entity.GetComponent<DisplayableGraphics>()
+
+        display.Sprite.x <- position.xx
+        display.Sprite.y <- position.yy
+
+  type Scene (engine) as self =
+
 
     member val Root : Container = Container() with get
     member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
@@ -167,7 +254,7 @@ module Main =
       self.Player.Update(dt)
       ()
 
-  and Engine () =
+  type Engine () =
     member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
     member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
     member val StartDate : DateTime = DateTime.Now with get, set
