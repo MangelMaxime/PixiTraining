@@ -23,15 +23,12 @@ module Main =
     member val Engine : Engine = engine with get, set
     member val Entities : Entity list = [] with get, set
 
-    abstract Init: unit -> Scene
-    abstract Update : float -> unit
-
-    default self.Init() =
+    member self.Init() =
       self.MouseState <- Mouse.init self.Root
       self.KeyboardState <- Keyboard.init engine.Canvas
       self
 
-    default self.Update (_: float) = ()
+    member self.Update (_: float) = ()
 
   and Engine () =
     member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
@@ -120,14 +117,14 @@ module Main =
 
   type Moveable =
     { mutable dx: float
-      mutable Dy: float
+      mutable dy: float
     }
 
     interface IComponent
 
     static member Create(?dx, ?dy) =
       { dx = defaultArg dx 0.
-        Dy = defaultArg dy 0.
+        dy = defaultArg dy 0.
       }
 
   type DisplayableGraphics =
@@ -155,10 +152,10 @@ module Main =
   let createPlayer (root: Container) =
     let sprite = Graphics()
     sprite.beginFill(float 0xFFFF00) |> ignore
-    sprite.drawCircle(50., 50., GRID * 0.5) |> ignore
+    sprite.drawCircle(0., 0., GRID * 0.5) |> ignore
     sprite.endFill() |> ignore
     root.addChild(sprite) |> ignore
-    Browser.console.log "oko"
+
     { Id = "player"
       Components = Dictionary<string, IComponent>()
     }
@@ -217,21 +214,16 @@ module Main =
 
   renderer.view.focus()
 
-  let root = Container()
-
-  let mouseState = Mouse.init root
-  let keyboardState = Keyboard.init renderer.view
-
   let systemUserInputs (entities: Entity list) =
     for entity in entities do
       if entity.HasComponent<UserControlled>() && entity.HasComponent<Moveable>() then
         let moveable = entity.GetComponent<Moveable>()
         let speed = 0.04
-
-        if keyboardState.IsPress(Keyboard.Keys.ArrowRight) then
-          moveable.dx <- moveable.dx + speed
-        else if keyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
-          moveable.dx <- moveable.dx - speed
+        ()
+//        if keyboardState.IsPress(Keyboard.Keys.ArrowRight) then
+//          moveable.dx <- moveable.dx + speed
+//        else if keyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
+//          moveable.dx <- moveable.dx - speed
     entities
 
 
@@ -247,7 +239,7 @@ module Main =
 
         // X Components
         position.xr <- position.xr + moveable.dx
-        moveable.dx <- moveable.dx + frictX
+        moveable.dx <- moveable.dx * frictX
 
 //        if hasCollision (position.cx - 1) position.cy sceneState.Level && position.xr <= 0.3 then
 //          moveable.dx <- 0.
@@ -265,8 +257,23 @@ module Main =
           position.cx <- position.cx + 1
           position.xr <- position.xr - 1.
 
+        // Y components
+        moveable.dy <- moveable.dy - gravity
+        position.yr <- position.yr - moveable.dy
+        moveable.dy <- moveable.dy * frictY
+
+        while position.yr < 0. do
+          position.cy <- position.cy - 1
+          position.yr <- position.yr + 1.
+
+        while position.yr > 1. do
+          position.cy <- position.cy + 1
+          position.yr <- position.yr - 1.
+
         position.xx <- (float position.cx + position.xr) * GRID
         position.yy <- (float position.cy + position.yr) * GRID
+
+        Browser.console.log (position.yy)
     entities
 
   let systemRenderer (entities: Entity list) =
@@ -283,25 +290,25 @@ module Main =
   type SceneLevel1 (engine) =
     inherit Scene(engine)
 
-    override self.Init() =
-      Browser.console.log "oko"
-      createPlayer root
+    member self.Init() =
+      self.Entities <-
+        [ createPlayer self.Root
+        ]
 
-      self :> Scene
+      base.Init()
 
-    override self.Update (dt: float) =
-//      self.Entities
-//      |> systemUserInputs
-//      |> systemPhysics
-//      |> systemRenderer
-//      |> ignore
+    member self.Update (dt: float) =
+      self.Entities
+      |> systemUserInputs
+      |> systemPhysics
+      |> systemRenderer
+      |> ignore
       ()
 
 
   // Create and init the engine instance
   let engine = new Engine()
   engine.Init()
-
 
   let scene = SceneLevel1(engine).Init()
   engine.SetScene(scene)
