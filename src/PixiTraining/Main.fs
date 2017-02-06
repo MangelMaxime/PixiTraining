@@ -15,6 +15,68 @@ module Main =
 
   let GRID = 32.
 
+  type Scene (engine) as self =
+    member val GraphicRoot : Container = Container() with get
+    member val Engine : Engine = engine with get, set
+
+    member self.Init() =
+      self
+
+    member self.Update(dt: float) =
+      ()
+
+  and Engine () =
+    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
+    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
+    member val StartDate : DateTime = DateTime.Now with get, set
+    member val LastTickDate = 0. with get, set
+    member val DeltaTime = 0. with get, set
+    member val Scene: Scene option = None with get, set
+
+    member self.Init () =
+      let options =
+        [ BackgroundColor (float 0x9999bb)
+          Resolution 1.
+          Antialias true
+        ]
+      // Init the renderer
+      self.Renderer <- WebGLRenderer(1024., 800., options)
+      // Init the canvas
+      self.Canvas <- self.Renderer.view
+      self.Canvas.setAttribute("tabindex", "1")
+      self.Canvas.id <- "game"
+
+      self.Canvas.addEventListener_click(fun ev ->
+        self.Canvas.focus()
+        null
+      )
+
+      Browser.document.body
+        .appendChild(self.Canvas) |> ignore
+
+      Mouse.init self.Canvas
+      Keyboard.init self.Canvas true
+
+      self.Canvas.focus()
+
+    member self.Start() =
+      self.StartDate <- DateTime.Now
+      self.RequestUpdate()
+
+    member self.RequestUpdate() =
+      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
+
+    member self.Update(dt: float) =
+      match self.Scene with
+      | Some scene ->
+          scene.Update(dt)
+          self.Renderer.render(scene.GraphicRoot)
+      | None -> Browser.console.warn "No scene."
+      self.RequestUpdate()
+
+    member self.SetScene(scene) =
+      self.Scene <- Some scene
+
   type Entity (scene) =
 
     // Base coordinates
@@ -28,7 +90,7 @@ module Main =
     // Graphical object
     member val Graphics : Graphics = Graphics() with get, set
     // Scene instance
-    member val scene: Scene = scene with get, set
+    member val scene: Level1 = scene with get, set
     // Movements
     member val dx = 0. with get, set
     member val dy = 0. with get, set
@@ -38,7 +100,7 @@ module Main =
       self.Graphics.drawCircle(0., 0., GRID * 0.5) |> ignore
       self.Graphics.endFill() |> ignore
 
-      self.scene.Root.addChild(self.Graphics) |> ignore
+      self.scene.GraphicRoot.addChild(self.Graphics) |> ignore
       self
 
     member self.Update(dt: float) =
@@ -111,31 +173,46 @@ module Main =
     member self.OnGround () =
       self.HasCollision(self.cx, self.cy+1) && self.yr >= 0.5
 
-  and Scene (engine) as self =
+  and Level1 (engine) as self =
+    inherit Scene(engine)
+
     let rand = Random()
 
-    member val Root : Container = Container() with get
-    member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
-    member val KeyboardState = Unchecked.defaultof<Keyboard.KeyboardState> with get, set
     member val Level : bool [] [] = [||]
     member val Blocks : Graphics = Unchecked.defaultof<Graphics> with get, set
-    member val Engine : Engine = engine with get, set
     member val Player = Entity(self).Init() with get, set
     member val InfoText: PIXI.Text = Unchecked.defaultof<PIXI.Text> with get, set
 
-    member self.Init() =
-      self.MouseState <- Mouse.init self.Root
-      self.KeyboardState <- Keyboard.init engine.Canvas
-
+    member self.Init () =
       self.InfoText <- PIXI.Text("Use arrows to move. \nPress R to start a new level")
-      self.Root.addChild(self.InfoText) |> ignore
+      self.GraphicRoot.addChild(self.InfoText) |> ignore
 
       self.GenerateLevel()
       self
 
+    member self.Update(dt: float) =
+      let speed = 0.04
+
+      if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowRight) then
+        self.Player.dx <- self.Player.dx + speed
+
+      if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowLeft) then
+        self.Player.dx <- self.Player.dx - speed
+
+      if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowUp) && self.Player.OnGround() then
+        self.Player.dy <- 0.7
+
+      if Keyboard.Manager.IsPress(Keyboard.Keys.R) then
+        self.GraphicRoot.removeChild(self.Blocks) |> ignore
+        self.GenerateLevel()
+        self.Player.SetCoordinates(5 * int GRID, 0)
+
+      self.Player.Update(dt)
+      ()
+
     member self.GenerateLevel() =
       self.Blocks <- Graphics()
-      self.Root.addChild(self.Blocks) |> ignore
+      self.GraphicRoot.addChild(self.Blocks) |> ignore
       self.Blocks.beginFill(float 0x525252) |> ignore
 
       for x = 0 to 31 do
@@ -147,81 +224,11 @@ module Main =
 
       self.Blocks.endFill() |> ignore
 
-    member self.Update(dt: float) =
-      let speed = 0.04
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowRight) then
-        self.Player.dx <- self.Player.dx + speed
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
-        self.Player.dx <- self.Player.dx - speed
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowUp) && self.Player.OnGround() then
-        self.Player.dy <- 0.7
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.R) then
-        self.Root.removeChild(self.Blocks) |> ignore
-        self.GenerateLevel()
-        self.Player.SetCoordinates(5 * int GRID, 0)
-
-      self.Player.Update(dt)
-      ()
-
-  and Engine () =
-    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
-    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
-    member val StartDate : DateTime = DateTime.Now with get, set
-    member val LastTickDate = 0. with get, set
-    member val DeltaTime = 0. with get, set
-    member val Scene: Scene option = None with get, set
-
-    member self.Init () =
-      let options =
-        [ BackgroundColor (float 0x9999bb)
-          Resolution 1.
-          Antialias true
-        ]
-      // Init the renderer
-      self.Renderer <- WebGLRenderer(1024., 800., options)
-      // Init the canvas
-      self.Canvas <- self.Renderer.view
-      self.Canvas.setAttribute("tabindex", "1")
-      self.Canvas.id <- "game"
-
-      self.Canvas.addEventListener_click(fun ev ->
-        self.Canvas.focus()
-        null
-      )
-
-      Browser.document.body
-        .appendChild(self.Canvas) |> ignore
-
-      self.Canvas.focus()
-
-    member self.Start() =
-      self.StartDate <- DateTime.Now
-      self.RequestUpdate()
-
-    member self.RequestUpdate() =
-      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
-
-    member self.Update(dt: float) =
-      match self.Scene with
-      | Some scene ->
-          scene.Update(dt)
-          self.Renderer.render(scene.Root)
-      | None -> Browser.console.warn "No scene."
-      self.RequestUpdate()
-
-    member self.SetScene(scene) =
-      self.Scene <- Some scene
-
-
   // Create and init the engine instance
   let engine = new Engine()
   engine.Init()
 
 
-  let scene = Scene(engine).Init()
+  let scene = Level1(engine).Init()
   engine.SetScene(scene)
   engine.Start()

@@ -1,12 +1,9 @@
 ﻿namespace PixiTraining.Inputs
 
 open Fable.Core
-open Fable.Core.JsInterop
-open Fable.Import
-open Fable.Import.PIXI
-open Fable.PowerPack
-open System
+open Fable.Import.Browser
 
+[<RequireQualifiedAccess>]
 module Keyboard =
 
   // We use module + type + AutoOpen to not polluate the Keyboard module with all keys definitions
@@ -77,8 +74,8 @@ module Keyboard =
         Alt = false
       }
 
-  type KeyboardState =
-    { mutable KeysPressed: Set<Keys.Keys>
+  type Record =
+    { mutable KeysPressed: Set<Keys>
       mutable LastKeyCode: int
       mutable LastKeyValue: string
       mutable LastKeyIsPrintable: bool
@@ -104,55 +101,69 @@ module Keyboard =
       self.LastKeyIsPrintable <- false
       self.LastKey <- Keys.Dead -1
 
-  let init (element: Browser.HTMLElement) =
-    let state = KeyboardState.Initial
+  let Manager = Record.Initial
 
-    let updateModifiers (e: Browser.KeyboardEvent) =
-      state.Modifiers.Alt <- e.altKey
-      state.Modifiers.Shift <- e.shiftKey
-      state.Modifiers.Control <- e.ctrlKey
-      state.Modifiers.CommandLeft <- e.keyCode = 224.
-      state.Modifiers.CommandRight <- e.keyCode = 224.
+  let init (element: HTMLElement) preventDefault =
+    let updateModifiers (e: KeyboardEvent) =
+      Manager.Modifiers.Alt <- e.altKey
+      Manager.Modifiers.Shift <- e.shiftKey
+      Manager.Modifiers.Control <- e.ctrlKey
+      Manager.Modifiers.CommandLeft <- e.keyCode = 224.
+      Manager.Modifiers.CommandRight <- e.keyCode = 224.
 
     element.addEventListener_keydown(
-      fun ev ->
-        let code = int ev.keyCode
+      fun e ->
+        let code = int e.keyCode
         let key = resolveKeyFromCode code
 
-        state.LastKeyValue <- ev.key
-        state.LastKeyCode <- code
-
+        Manager.LastKeyValue <- e.key
+        Manager.LastKeyCode <- code
         // Here we try to determine if the key is printable or not
         // Should not be "Dead". Exemple first press on '^' is Dead
         // And the value should be of size [1,2] because we can add:
         // * One character at a time. Example: 'a', '!', '§'
         // * Two characters at a time. Example '^^', '^p'
         // Second case occured when pressing some keys in sequence.
+        // Example:
         // * '^^' = '^' + '^'
         // * '^p' = '^' + 'p'
         // We also have to make sure the key is not F1..F12 so we exclude keycode range: [112,123]
-        state.LastKeyIsPrintable <- 1 <= ev.key.Length && ev.key.Length <= 2 && (code < 112 || code > 123)
-        state.LastKey <- key
-        state.KeysPressed <- Set.add key state.KeysPressed
-
-        updateModifiers ev
+        Manager.LastKeyIsPrintable <- 1 <= e.key.Length && e.key.Length <= 2 && (code < 112 || code > 123)
+        Manager.LastKey <- key
+        Manager.KeysPressed <- Set.add key Manager.KeysPressed
+        // Update the Modifiers state
+        updateModifiers e
         null
     )
 
-    element.addEventListener_keyup(fun ev ->
-      let code = int ev.keyCode
+    element.addEventListener_keyup(
+      fun e ->
+        let code = int e.keyCode
 
-      state.KeysPressed <- Set.remove (resolveKeyFromCode code) state.KeysPressed
-      updateModifiers ev
-      null
+        Manager.KeysPressed <- Set.remove (resolveKeyFromCode code) Manager.KeysPressed
+        // Update the Modifiers state
+        updateModifiers e
+        null
     )
 
-//    container.on("keydown", unbox(fun (ev: InteractionEvent) ->
-//      let keyboardEvent = unbox<Browser.KeyboardEvent> ev.data
-//      let code = int keyboardEvent.keyCode
-//
-//      state.KeysPressed <- Set.remove code state.KeysPressed
-//      updateModifiers keyboardEvent
-//    )) |> ignore
+    // If the user ask to prevent tab unloosing focus
+    if preventDefault then
+      element.addEventListener_keydown(
+        fun e ->
+          let code = int e.keyCode
 
-    state
+          let shouldPreventFromCtrl =
+            if e.ctrlKey then
+              match resolveKeyFromCode code with
+              | Keys.A -> true
+              | _ -> false
+            else
+              false
+
+          // If we pressed tab then preventDefault to not loose the focus
+          if code = 9 || code = 8 || shouldPreventFromCtrl then
+            e.preventDefault()
+            unbox false
+          else
+            null
+      )
