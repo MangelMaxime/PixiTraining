@@ -5,7 +5,6 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Import
 open Fable.Import.PIXI
-open Fable.Import.Matter
 
 open PixiTraining.Inputs
 
@@ -17,8 +16,87 @@ module Main =
   let GRID = 32.
   //http://vasir.net/blog/game-development/how-to-build-entity-component-system-in-javascript
 
-  type IComponent =
+  type Scene (engine) =
+    member val Root : Container = Container() with get
+    member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
+    member val KeyboardState = Unchecked.defaultof<Keyboard.KeyboardState> with get, set
+    member val Engine : Engine = engine with get, set
+    member val Entities : Entity list = [] with get, set
+
+    abstract Init: unit -> Scene
+    abstract Update : float -> unit
+
+    default self.Init() =
+      self.MouseState <- Mouse.init self.Root
+      self.KeyboardState <- Keyboard.init engine.Canvas
+      self
+
+    default self.Update (_: float) = ()
+
+  and Engine () =
+    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
+    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
+    member val StartDate : DateTime = DateTime.Now with get, set
+    member val LastTickDate = 0. with get, set
+    member val DeltaTime = 0. with get, set
+    member val Scene: Scene option = None with get, set
+
+    member self.Init () =
+      let options =
+        [ BackgroundColor (float 0x9999bb)
+          Resolution 1.
+          Antialias true
+        ]
+      // Init the renderer
+      self.Renderer <- WebGLRenderer(1024., 800., options)
+      // Init the canvas
+      self.Canvas <- self.Renderer.view
+      self.Canvas.setAttribute("tabindex", "1")
+      self.Canvas.id <- "game"
+
+      self.Canvas.addEventListener_click(fun ev ->
+        self.Canvas.focus()
+        null
+      )
+
+      Browser.document.body
+        .appendChild(self.Canvas) |> ignore
+
+      self.Canvas.focus()
+
+    member self.Start() =
+      self.StartDate <- DateTime.Now
+      self.RequestUpdate()
+
+    member self.RequestUpdate() =
+      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
+
+    member self.Update(dt: float) =
+      match self.Scene with
+      | Some scene ->
+          scene.Update(dt)
+          self.Renderer.render(scene.Root)
+      | None -> Browser.console.warn "No scene."
+      self.RequestUpdate()
+
+    member self.SetScene(scene) =
+      self.Scene <- Some scene
+
+  and IComponent =
     interface end
+
+  and Entity =
+    { Id: String
+      Components: Dictionary<string, IComponent>
+    }
+
+    [<PassGenerics>]
+    member self.HasComponent<'T>() =
+      self.Components.ContainsKey(typeof<'T>.Name)
+
+    [<PassGenerics>]
+    member self.GetComponent<'T>() =
+      unbox<'T> self.Components.[typeof<'T>.Name]
 
   type Position =
     { mutable cx: int
@@ -58,21 +136,14 @@ module Main =
 
     interface IComponent
 
+    static member Create(sprite) =
+      { Sprite = sprite
+      }
+
   type UserControlled =
     inherit IComponent
 
-  type Entity =
-    { Id: String
-      Components: Dictionary<string, IComponent>
-    }
-
-    member self.HasComponent<'T>() =
-      self.Components.ContainsKey(typeof<'T>.Name)
-
-    [<PassGenerics>]
-    member self.GetComponent<'T>() =
-      unbox<'T> self.Components.[typeof<'T>.Name]
-
+  [<PassGenerics>]
   let addComponent<'T> comp entity =
     entity.Components.Add(typeof<'T>.Name, comp)
     entity
@@ -81,13 +152,20 @@ module Main =
     entity.Components.Remove(key) |> ignore
     entity
 
-  let createPlayer () =
+  let createPlayer (root: Container) =
+    let sprite = Graphics()
+    sprite.beginFill(float 0xFFFF00) |> ignore
+    sprite.drawCircle(50., 50., GRID * 0.5) |> ignore
+    sprite.endFill() |> ignore
+    root.addChild(sprite) |> ignore
+    Browser.console.log "oko"
     { Id = "player"
       Components = Dictionary<string, IComponent>()
     }
     |> addComponent<Moveable> (Moveable.Create())
     |> addComponent<Position> (Position.Create())
     |> addComponent<UserControlled> (Unchecked.defaultof<UserControlled>)
+    |> addComponent<DisplayableGraphics> (DisplayableGraphics.Create(sprite))
 
   let hasCollision cx cy (level: bool [] []) =
     if cx < 0 || cx > level.Length - 1 || cy >= level.[cx].Length then
@@ -154,9 +232,10 @@ module Main =
           moveable.dx <- moveable.dx + speed
         else if keyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
           moveable.dx <- moveable.dx - speed
+    entities
 
 
-  let systemPhysics (sceneState: SceneState) (entities: Entity list) =
+  let systemPhysics (entities: Entity list) =
     for entity in entities do
       if entity.HasComponent<Position>() && entity.HasComponent<Moveable>() then
         let position = entity.GetComponent<Position>()
@@ -170,13 +249,13 @@ module Main =
         position.xr <- position.xr + moveable.dx
         moveable.dx <- moveable.dx + frictX
 
-        if hasCollision (position.cx - 1) position.cy sceneState.Level && position.xr <= 0.3 then
-          moveable.dx <- 0.
-          position.xr <- 0.3
-
-        if hasCollision (position.cx + 1) position.cy sceneState.Level && position.xr >= 0.7 then
-          moveable.dx <- 0.
-          position.xr <- 0.7
+//        if hasCollision (position.cx - 1) position.cy sceneState.Level && position.xr <= 0.3 then
+//          moveable.dx <- 0.
+//          position.xr <- 0.3
+//
+//        if hasCollision (position.cx + 1) position.cy sceneState.Level && position.xr >= 0.7 then
+//          moveable.dx <- 0.
+//          position.xr <- 0.7
 
         while position.xr < 0. do
           position.cx <- position.cx - 1
@@ -188,6 +267,7 @@ module Main =
 
         position.xx <- (float position.cx + position.xr) * GRID
         position.yy <- (float position.cy + position.yr) * GRID
+    entities
 
   let systemRenderer (entities: Entity list) =
     for entity in entities do
@@ -197,111 +277,25 @@ module Main =
 
         display.Sprite.x <- position.xx
         display.Sprite.y <- position.yy
+    entities
 
-  type Scene (engine) as self =
 
+  type SceneLevel1 (engine) =
+    inherit Scene(engine)
 
-    member val Root : Container = Container() with get
-    member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
-    member val KeyboardState = Unchecked.defaultof<Keyboard.KeyboardState> with get, set
-    member val Level : bool [] [] = [||]
-    member val Blocks : Graphics = Unchecked.defaultof<Graphics> with get, set
-    member val Engine : Engine = engine with get, set
-    member val Player = Entity(self).Init() with get, set
-    member val InfoText: PIXI.Text = Unchecked.defaultof<PIXI.Text> with get, set
+    override self.Init() =
+      Browser.console.log "oko"
+      createPlayer root
 
-    member self.Init() =
-      self.MouseState <- Mouse.init self.Root
-      self.KeyboardState <- Keyboard.init engine.Canvas
+      self :> Scene
 
-      self.InfoText <- PIXI.Text("Use arrows to move. \nPress R to start a new level")
-      self.Root.addChild(self.InfoText) |> ignore
-
-      self.GenerateLevel()
-      self
-
-    member self.GenerateLevel() =
-      self.Blocks <- Graphics()
-      self.Root.addChild(self.Blocks) |> ignore
-      self.Blocks.beginFill(float 0x525252) |> ignore
-
-      for x = 0 to 31 do
-        self.Level.[x] <- [||]
-        for y = 0 to 24 do
-          self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
-          if self.Level.[x].[y] then
-            self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID) |> ignore
-
-      self.Blocks.endFill() |> ignore
-
-    member self.Update(dt: float) =
-      let speed = 0.04
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowRight) then
-        self.Player.dx <- self.Player.dx + speed
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
-        self.Player.dx <- self.Player.dx - speed
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.ArrowUp) && self.Player.OnGround() then
-        self.Player.dy <- 0.7
-
-      if self.KeyboardState.IsPress(Keyboard.Keys.R) then
-        self.Root.removeChild(self.Blocks) |> ignore
-        self.GenerateLevel()
-        self.Player.SetCoordinates(5 * int GRID, 0)
-
-      self.Player.Update(dt)
+    override self.Update (dt: float) =
+//      self.Entities
+//      |> systemUserInputs
+//      |> systemPhysics
+//      |> systemRenderer
+//      |> ignore
       ()
-
-  type Engine () =
-    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
-    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
-    member val StartDate : DateTime = DateTime.Now with get, set
-    member val LastTickDate = 0. with get, set
-    member val DeltaTime = 0. with get, set
-    member val Scene: Scene option = None with get, set
-
-    member self.Init () =
-      let options =
-        [ BackgroundColor (float 0x9999bb)
-          Resolution 1.
-          Antialias true
-        ]
-      // Init the renderer
-      self.Renderer <- WebGLRenderer(1024., 800., options)
-      // Init the canvas
-      self.Canvas <- self.Renderer.view
-      self.Canvas.setAttribute("tabindex", "1")
-      self.Canvas.id <- "game"
-
-      self.Canvas.addEventListener_click(fun ev ->
-        self.Canvas.focus()
-        null
-      )
-
-      Browser.document.body
-        .appendChild(self.Canvas) |> ignore
-
-      self.Canvas.focus()
-
-    member self.Start() =
-      self.StartDate <- DateTime.Now
-      self.RequestUpdate()
-
-    member self.RequestUpdate() =
-      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
-
-    member self.Update(dt: float) =
-      match self.Scene with
-      | Some scene ->
-          scene.Update(dt)
-          self.Renderer.render(scene.Root)
-      | None -> Browser.console.warn "No scene."
-      self.RequestUpdate()
-
-    member self.SetScene(scene) =
-      self.Scene <- Some scene
 
 
   // Create and init the engine instance
@@ -309,6 +303,6 @@ module Main =
   engine.Init()
 
 
-  let scene = Scene(engine).Init()
+  let scene = SceneLevel1(engine).Init()
   engine.SetScene(scene)
   engine.Start()

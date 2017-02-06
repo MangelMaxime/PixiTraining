@@ -852,9 +852,9 @@ extsprintf@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.0.2.tgz#e1080e0658e300b06294990cc70e1502235fd550"
 
-fable-compiler@^0.7.40:
-  version "0.7.40"
-  resolved "https://registry.yarnpkg.com/fable-compiler/-/fable-compiler-0.7.40.tgz#9a13d945ba15f612758ebe85e657d33ccb1dffdc"
+fable-compiler@^0.7.42:
+  version "0.7.42"
+  resolved "https://registry.yarnpkg.com/fable-compiler/-/fable-compiler-0.7.42.tgz#5f91c96056092c83d2501bbeb369a287f6b819ab"
   dependencies:
     babel-core "^6.21.0"
     babel-dts-generator "^0.6.3"
