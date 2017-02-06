@@ -18,14 +18,10 @@ module Main =
 
   type Scene (engine) =
     member val Root : Container = Container() with get
-    member val MouseState = Unchecked.defaultof<Mouse.MouseState> with get, set
-    member val KeyboardState = Unchecked.defaultof<Keyboard.KeyboardState> with get, set
     member val Engine : Engine = engine with get, set
     member val Entities : Entity list = [] with get, set
 
     member self.Init() =
-      self.MouseState <- Mouse.init self.Root
-      self.KeyboardState <- Keyboard.init engine.Canvas
       self
 
     member self.Update (_: float) = ()
@@ -60,6 +56,10 @@ module Main =
         .appendChild(self.Canvas) |> ignore
 
       self.Canvas.focus()
+
+      // Init inputs managers
+      Inputs.Mouse.init self.Canvas
+      Inputs.Keyboard.init self.Canvas true
 
     member self.Start() =
       self.StartDate <- DateTime.Now
@@ -186,46 +186,17 @@ module Main =
     blocks.endFill() |> ignore
     blocks
 
-  type SceneState =
-    { MouseState: Mouse.MouseState
-      KeyboardState: Keyboard.KeyboardState
-      Level: bool [][]
-    }
-
-
-  let options =
-    [ BackgroundColor (float 0x9999bb)
-      Resolution 1.
-      Antialias true
-    ]
-  // Init the renderer
-  let renderer = WebGLRenderer(1024., 800., options)
-  // Init the canvas
-  renderer.view.setAttribute("tabindex", "1")
-  renderer.view.id <- "game"
-
-  renderer.view.addEventListener_click(fun ev ->
-    renderer.view.focus()
-    null
-  )
-
-  Browser.document.body
-    .appendChild(renderer.view) |> ignore
-
-  renderer.view.focus()
-
   let systemUserInputs (entities: Entity list) =
     for entity in entities do
       if entity.HasComponent<UserControlled>() && entity.HasComponent<Moveable>() then
         let moveable = entity.GetComponent<Moveable>()
         let speed = 0.04
         ()
-//        if keyboardState.IsPress(Keyboard.Keys.ArrowRight) then
-//          moveable.dx <- moveable.dx + speed
-//        else if keyboardState.IsPress(Keyboard.Keys.ArrowLeft) then
-//          moveable.dx <- moveable.dx - speed
+        if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowRight) then
+          moveable.dx <- moveable.dx + speed
+        else if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowLeft) then
+          moveable.dx <- moveable.dx - speed
     entities
-
 
   let systemPhysics (entities: Entity list) =
     for entity in entities do
@@ -241,11 +212,11 @@ module Main =
         position.xr <- position.xr + moveable.dx
         moveable.dx <- moveable.dx * frictX
 
-//        if hasCollision (position.cx - 1) position.cy sceneState.Level && position.xr <= 0.3 then
+//        if hasCollision (position.cx - 1) position.cy level && position.xr <= 0.3 then
 //          moveable.dx <- 0.
 //          position.xr <- 0.3
 //
-//        if hasCollision (position.cx + 1) position.cy sceneState.Level && position.xr >= 0.7 then
+//        if hasCollision (position.cx + 1) position.cy level && position.xr >= 0.7 then
 //          moveable.dx <- 0.
 //          position.xr <- 0.7
 
@@ -273,7 +244,6 @@ module Main =
         position.xx <- (float position.cx + position.xr) * GRID
         position.yy <- (float position.cy + position.yr) * GRID
 
-        Browser.console.log (position.yy)
     entities
 
   let systemRenderer (entities: Entity list) =
