@@ -65,6 +65,7 @@
     <Compile Include="Inputs\Keyboard.fs" />
     <Compile Include="Inputs/Mouse.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="Core.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
