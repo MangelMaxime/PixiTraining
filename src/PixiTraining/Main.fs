@@ -5,7 +5,6 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Import
 open Fable.Import.PIXI
-open Fable.Import.Matter
 
 open PixiTraining.Inputs
 
