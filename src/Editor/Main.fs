@@ -27,8 +27,20 @@ module Main =
 
   let view model =
     div
-      []
-      [ text "app running" ]
+      [ classy "tabs" ]
+      [ ul
+          []
+          [ li
+              []
+              [ a
+                  []
+                  [ text "Editor" ]
+                a
+                  []
+                  [ text "Game" ]
+              ]
+          ]
+      ]
 
   createApp Model.Initial view update Virtualdom.createRender
   |> withStartNodeSelector "#editor"
