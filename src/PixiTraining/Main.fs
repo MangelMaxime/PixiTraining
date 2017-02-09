@@ -7,74 +7,13 @@ open Fable.Import
 open Fable.Import.PIXI
 
 open PixiTraining.Inputs
+open PixiTraining.Engine
 
 open System
 
 module Main =
 
   let GRID = 32.
-
-  type Scene (engine) as self =
-    member val GraphicRoot : Container = Container() with get
-    member val Engine : Engine = engine with get, set
-
-    member self.Init() =
-      self
-
-    member self.Update(dt: float) =
-      ()
-
-  and Engine () =
-    member val Renderer = Unchecked.defaultof<WebGLRenderer> with get, set
-    member val Canvas = Unchecked.defaultof<Browser.HTMLCanvasElement> with get, set
-    member val StartDate : DateTime = DateTime.Now with get, set
-    member val LastTickDate = 0. with get, set
-    member val DeltaTime = 0. with get, set
-    member val Scene: Scene option = None with get, set
-
-    member self.Init () =
-      let options =
-        [ BackgroundColor (float 0x9999bb)
-          Resolution 1.
-          Antialias true
-        ]
-      // Init the renderer
-      self.Renderer <- WebGLRenderer(1024., 800., options)
-      // Init the canvas
-      self.Canvas <- self.Renderer.view
-      self.Canvas.setAttribute("tabindex", "1")
-      self.Canvas.id <- "game"
-
-      self.Canvas.addEventListener_click(fun ev ->
-        self.Canvas.focus()
-        null
-      )
-
-      Browser.document.body
-        .appendChild(self.Canvas) |> ignore
-
-      Mouse.init self.Canvas
-      Keyboard.init self.Canvas true
-
-      self.Canvas.focus()
-
-    member self.Start() =
-      self.StartDate <- DateTime.Now
-      self.RequestUpdate()
-
-    member self.RequestUpdate() =
-      Browser.window.requestAnimationFrame(fun dt -> self.Update(dt)) |> ignore
-
-    member self.Update(dt: float) =
-      match self.Scene with
-      | Some scene ->
-          scene.Update(dt)
-          self.Renderer.render(scene.GraphicRoot)
-      | None -> Browser.console.warn "No scene."
-      self.RequestUpdate()
-
-    member self.SetScene(scene) =
-      self.Scene <- Some scene
 
   type Entity (scene) =
 
@@ -102,7 +41,7 @@ module Main =
       self.scene.GraphicRoot.addChild(self.Graphics) |> ignore
       self
 
-    member self.Update(dt: float) =
+    member self.Update(_: float) =
       let frictX = 0.75
       let frictY = 0.94
       let gravity = 0.04
@@ -199,7 +138,7 @@ module Main =
         self.Player.dx <- self.Player.dx - speed
 
       if Keyboard.Manager.IsPress(Keyboard.Keys.ArrowUp) && self.Player.OnGround() then
-        self.Player.dy <- 0.7
+        self.Player.dy <- 0.5
 
       if Keyboard.Manager.IsPress(Keyboard.Keys.R) then
         self.GraphicRoot.removeChild(self.Blocks) |> ignore
@@ -214,10 +153,10 @@ module Main =
       self.GraphicRoot.addChild(self.Blocks) |> ignore
       self.Blocks.beginFill(float 0x525252) |> ignore
 
-      for x = 0 to 31 do
+      for x = 0 to 24 do
         self.Level.[x] <- [||]
-        for y = 0 to 24 do
-          self.Level.[x].[y] <- y >= 22 || y > 3 && rand.Next(100) < 30
+        for y = 0 to 18 do
+          self.Level.[x].[y] <- y >= 17 || y > 2 && rand.Next(100) < 30
           if self.Level.[x].[y] then
             self.Blocks.drawRect(float x * GRID, float y * GRID, GRID, GRID) |> ignore
 
@@ -226,7 +165,6 @@ module Main =
   // Create and init the engine instance
   let engine = new Engine()
   engine.Init()
-
 
   let scene = Level1(engine).Init()
   engine.SetScene(scene)

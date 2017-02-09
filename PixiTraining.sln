@@ -13,9 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60
 		RELEASE_NOTES.md = RELEASE_NOTES.md
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PixiTraining", "src\PixiTraining\PixiTraining.fsproj", "{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "PixiTraining", "src\PixiTraining\PixiTraining.fsproj", "{4238B1A8-87FF-4240-B034-CFB4A7D1E4E5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Launcher", "src\Launcher\Launcher.fsproj", "{7380BC35-7406-44F9-9183-50CB2AF2F7BD}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Launcher", "src\Launcher\Launcher.fsproj", "{7380BC35-7406-44F9-9183-50CB2AF2F7BD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "baseApp", "baseApp", "{A13FF7F5-FA64-44CD-B384-E9DD61CF0065}"
 	ProjectSection(SolutionItems) = preProject
@@ -64,5 +64,25 @@ Global
 		{9CDE6EBD-AAF6-4186-A19F-3BF62F206E12} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
 		{CAE38565-3FFB-49FB-A4FE-F019F496109D} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
 		{8DD102BE-C984-431D-B591-8DA5194930C0} = {A13FF7F5-FA64-44CD-B384-E9DD61CF0065}
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.TextStylePolicy = $1
+		$1.FileWidth = 120
+		$1.TabWidth = 2
+		$1.IndentWidth = 2
+		$1.inheritsSet = VisualStudio
+		$1.inheritsScope = text/plain
+		$1.scope = text/x-fsharp
+		$0.FSharpFormattingPolicy = $2
+		$2.DefaultFormat = $3
+		$3.IndentOnTryWith = False
+		$3.ReorderOpenDeclaration = True
+		$3.SpaceAfterComma = True
+		$3.SpaceAfterSemicolon = True
+		$3.SpaceAroundDelimiter = True
+		$3.SpaceBeforeArgument = True
+		$3.SpaceBeforeColon = True
+		$2.scope = text/x-fsharp
 	EndGlobalSection
 EndGlobal
