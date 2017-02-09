@@ -11,13 +11,18 @@ const BASE_APP_DIR = "base_app"
 const JS_DIR = "js"
 
 const PixiTraining = {
-  DEST_FILE: "bundle.js",
+  DEST_FILE: "game.js",
   PROJ_FILE: "src/PixiTraining/PixiTraining.fsproj"
 }
 
 const Launcher = {
   DEST_FILE: "index.js",
-  PROJ_FILE: "src/Launcher/Launcher.fsproj",
+  PROJ_FILE: "src/Launcher/Launcher.fsproj"
+}
+
+const Editor = {
+  DEST_FILE: "editor.js",
+  PROJ_FILE: "src/Editor/Editor.fsproj"
 }
 
 const PixiTrainingConfig = {
@@ -25,10 +30,9 @@ const PixiTrainingConfig = {
   "babelPlugins": ["transform-runtime"],
   "rollup": {
     "dest": path.join(APP_DIR, JS_DIR, PixiTraining.DEST_FILE),
-    "external": ["PIXI", "Matter"],
+    "external": ["PIXI"],
     "globals": {
-      "PIXI": "PIXI",
-      "Matter": "Matter"
+      "PIXI": "PIXI"
     }
   }
 };
@@ -38,6 +42,21 @@ const LauncherConfig = {
   "babelPlugins": ["transform-runtime"],
   "outDir": APP_DIR,
   "module": "commonjs"
+};
+
+const EditorConfig = {
+  "projFile": Editor.PROJ_FILE,
+  "babelPlugins": ["transform-runtime"],
+  "rollup": {
+    "dest": path.join(APP_DIR, JS_DIR, Editor.DEST_FILE),
+    "plugins": {
+      "commonjs": {
+        "namedExports": {
+          "virtual-dom": [ "h", "create", "diff", "patch" ]
+        }
+      }
+    }
+  }
 };
 
 const toDevConfig = (baseConfig) =>
@@ -60,7 +79,12 @@ const targets = {
   },
   dev() {
     return this.buildLauncher()
-      .then(_ => fable.compile(toDevConfig(PixiTrainingConfig)))
+      .then(_ =>
+        Promise.all([
+          fable.compile(toDevConfig(PixiTrainingConfig)),
+          fable.compile(toDevConfig(EditorConfig))
+        ])
+      )
   },
   buildLauncher() {
     return this.setEnv()

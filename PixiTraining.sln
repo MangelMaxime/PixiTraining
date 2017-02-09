@@ -42,6 +42,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{8DD102BE-C
 		base_app\libs\pixi.js.map = base_app\libs\pixi.js.map
 	EndProjectSection
 EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Editor", "src\Editor\Editor.fsproj", "{ACD114EA-9423-4EE3-916C-60995BD0FCC6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7380BC35-7406-44F9-9183-50CB2AF2F7BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACD114EA-9423-4EE3-916C-60995BD0FCC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACD114EA-9423-4EE3-916C-60995BD0FCC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACD114EA-9423-4EE3-916C-60995BD0FCC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACD114EA-9423-4EE3-916C-60995BD0FCC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
