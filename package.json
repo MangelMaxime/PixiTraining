@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "autoprefixer": "^6.7.2",
     "babel-plugin-transform-runtime": "^6.22.0",
     "babel-runtime": "^6.22.0",
     "bluebird": "^3.4.7",
+    "cssnano": "^3.10.0",
     "electron": "^1.4.15",
     "fable-arch": "^0.10.0",
     "fable-compiler": "^0.7.40",
@@ -14,9 +16,20 @@
     "finalhandler": "^0.5.1",
     "fs-extra": "^2.0.0",
     "fs-extra-promise": "^0.4.1",
+    "knacss": "^6.0.7",
+    "node-sass": "^4.5.0",
+    "nodemon": "^1.11.0",
+    "postcss": "^5.2.12",
+    "postcss-cli": "^2.6.0",
     "serve-static": "^1.11.2",
-    "virtual-dom": "^2.1.1"
+    "virtual-dom": "^2.1.1",
+    "watch": "^1.0.1"
   },
   "private": true,
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "scripts": {
+    "prebuild:css": "node-sass src/Editor/scss/main.sass app/css/editor.css",
+    "build:css": "postcss --use autoprefixer -b 'last 2 versions' < app/css/editor.css | postcss --use cssnano > app/css/editor.min.css",
+    "watch-css": "watch 'npm run build:css' src/*"
+  }
 }

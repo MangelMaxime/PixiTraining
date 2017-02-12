@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -37,15 +36,20 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="Fable.Arch">
-      <HintPath>..\..\node_modules\fable-arch\Fable.Arch.dll</HintPath>
-    </Reference>
     <Reference Include="Fable.Core">
       <HintPath>..\..\node_modules\fable-core\Fable.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Libs\Aether.fs" />
+    <Compile Include="Libs\Fable.Import.Pixi.fs" />
+    <Compile Include="Inputs\Keyboard.fs" />
+    <Compile Include="Inputs\Mouse.fs" />
     <Compile Include="Main.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Inputs\" />
+    <Folder Include="Libs\" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
 </Project>

@@ -49,12 +49,9 @@ const EditorConfig = {
   "babelPlugins": ["transform-runtime"],
   "rollup": {
     "dest": path.join(APP_DIR, JS_DIR, Editor.DEST_FILE),
-    "plugins": {
-      "commonjs": {
-        "namedExports": {
-          "virtual-dom": [ "h", "create", "diff", "patch" ]
-        }
-      }
+    "external": ["PIXI"],
+    "globals": {
+      "PIXI": "PIXI"
     }
   }
 };
